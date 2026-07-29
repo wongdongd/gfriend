@@ -1,0 +1,93 @@
+# AI 人物陪伴平台
+
+> 让用户亲手创作、培养并与之长期相处的 AI 人物陪伴产品。以文字对话为核心，通过 AI 图片和短视频让人物"看得见"、拥有更强的陪伴感。
+
+## 技术栈
+
+| 层级 | 技术 | 说明 |
+|---|---|---|
+| 前端 | Next.js 15 · TypeScript · Tailwind CSS · shadcn/ui | 用户端 + 管理后台（`/admin`） |
+| API | FastAPI · Uvicorn · Pydantic v2 | 领域 API、SSE 流式、鉴权 |
+| Worker | Celery · Redis | 图片/视频/审核异步队列 |
+| 数据库 | PostgreSQL 16 · SQLAlchemy 2.0 · Alembic | 含 `pgvector` 扩展用于记忆检索 |
+| 缓存/队列 | Redis | 限流、Celery broker、会话缓存 |
+| 对象存储 | S3 兼容（MinIO 本地） | 角色参考图、生成作品、短期签名 URL |
+| 适配器 | LLM / 视觉 / 支付 / 存储 | 供应商可替换，统一抽象基类 |
+
+## 目录结构
+
+```text
+apps/
+  web/                # Next.js 用户端 + 管理后台
+  api/                # FastAPI 主服务（uvicorn）
+  worker/             # Celery Worker
+backend/              # Python 共享内核（api 与 worker 共用）
+  companion_core/     # 上下文组装 / 记忆检索 / 安全编排
+  provider_adapters/  # LLM / 视觉 / 支付 / 存储 适配器
+  db/                 # SQLAlchemy models + Alembic 迁移
+  shared/             # 配置、安全、依赖注入、通用工具
+packages/
+  shared/             # 前端共享 TypeScript 类型/常量
+infra/
+  docker/             # Dockerfile（api / worker / web）
+  docker-compose.yml  # PostgreSQL + Redis + MinIO + 全栈
+docs/                 # 产品方案、实现方案与设计文档
+```
+
+## 快速开始
+
+### 前置要求
+
+- Python 3.11+
+- Node.js 20+、pnpm 9+
+- Docker & Docker Compose（用于本地 PostgreSQL / Redis / MinIO）
+
+### 1. 启动基础设施
+
+```bash
+cp .env.example .env          # 填入必要的密钥
+docker compose -f infra/docker-compose.yml up -d postgres redis minio
+```
+
+### 2. 启动后端 API
+
+```bash
+cd apps/api
+python -m venv .venv && source .venv/bin/activate
+pip install -e ../../backend -r requirements.txt
+alembic upgrade head           # 执行数据库迁移
+uvicorn app.main:app --reload --port 8000
+```
+
+### 3. 启动 Worker
+
+```bash
+cd apps/worker
+python -m venv .venv && source .venv/bin/activate
+pip install -e ../../backend -r requirements.txt
+celery -A app.worker worker -l info
+```
+
+### 4. 启动前端
+
+```bash
+cd apps/web
+pnpm install
+pnpm dev                       # http://localhost:3000
+```
+
+## 文档
+
+- [产品方案](docs/01-mvp-product-plan.md)
+- [原始实现方案](docs/02-mvp-implementation-plan.md)
+- [Python 后端实现方案](docs/03-python-implementation-plan.md)
+
+## 开发阶段
+
+- **阶段 A · 陪伴闭环**：邮箱/OAuth 登录、模板化角色创建、文本聊天、会话历史、显式记忆卡片、角色主页、基础安全。
+- **阶段 B · 视觉陪伴**：角色视觉设定、场景/风格模板、图片任务队列、作品时间线、积分冻结与失败补偿。
+- **阶段 C · 商业化与视频**：Stripe 支付、订阅权益、视频生成、完整管理后台、监控告警。
+
+## 许可
+
+UNLICENSED

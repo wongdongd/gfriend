@@ -1,0 +1,14 @@
+{
+  "name": "companion-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI 人物陪伴平台 - 让用户亲手创作、培养并与之长期相处的 AI 人物陪伴产品",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "pnpm --filter @companion/web dev",
+    "build": "pnpm --filter @companion/web build",
+    "lint": "pnpm --filter @companion/web lint",
+    "typecheck": "pnpm --filter @companion/web typecheck"
+  },
+  "packageManager": "pnpm@10.28.2"
+}
