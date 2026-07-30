@@ -1,0 +1,1 @@
+This directory is required by infra/docker/web.Dockerfile (COPY apps/web/public).
