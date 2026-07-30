@@ -11,9 +11,22 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from shared.config import settings
 
+
+def _normalize_async_url(url: str) -> str:
+    """确保异步引擎使用 asyncpg 驱动。
+
+    Railway 的 Postgres 插件注入的 ``DATABASE_URL`` 为 ``postgresql://``
+    （同步格式），而 SQLAlchemy 异步引擎需要 ``postgresql+asyncpg://``。
+    本地开发默认值已是 ``postgresql+asyncpg://``，这里仅做兼容转换。
+    """
+    if url.startswith("postgresql://"):
+        return "postgresql+asyncpg://" + url[len("postgresql://") :]
+    return url
+
+
 # 异步 engine（运行时）
 engine = create_async_engine(
-    settings.database_url,
+    _normalize_async_url(settings.database_url),
     echo=settings.app_env == "development",
     pool_pre_ping=True,
     pool_size=10,

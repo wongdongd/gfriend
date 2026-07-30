@@ -44,10 +44,21 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS（开发环境允许前端直连）
+# CORS：开发环境允许 localhost 直连；生产环境通过 CORS_ORIGINS 环境变量配置前端域名
+import os
+
+_default_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+_cors_env = os.getenv("CORS_ORIGINS", "")
+_cors_origins = _default_origins + [o.strip() for o in _cors_env.split(",") if o.strip()]
+if settings.app_env != "development":
+    # 生产环境始终允许自身 API 域名与配置的 APP_URL
+    for _extra in (os.getenv("APP_URL", ""), os.getenv("API_URL", "")):
+        if _extra and _extra not in _cors_origins:
+            _cors_origins.append(_extra)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
