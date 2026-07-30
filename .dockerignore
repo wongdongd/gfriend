@@ -1,0 +1,37 @@
+# ===== 版本控制 / 元数据 =====
+.git
+.gitignore
+.github
+.vscode
+.idea
+*.md
+docs
+
+# ===== 依赖与构建缓存 =====
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/build
+**/__pycache__
+**/*.pyc
+**/.venv
+**/venv
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+
+# ===== 密钥与环境（防止误打入镜像） =====
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+secrets/
+
+# ===== 日志与临时文件 =====
+*.log
+**/logs
+**/.DS_Store
+**/coverage
+**/.coverage
