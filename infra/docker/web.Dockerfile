@@ -24,6 +24,8 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# runner 阶段是独立基础镜像，需重新安装 pnpm（全局安装未被 COPY 进 runner）
+RUN npm install -g pnpm@10
 COPY --from=builder /app/apps/web/.next ./apps/web/.next
 COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder /app/apps/web/package.json ./apps/web/package.json
@@ -32,4 +34,5 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000
-CMD ["pnpm", "--filter", "@companion/web", "start", "--port", "${PORT:-3000}"]
+# 使用 shell 形式以正确展开 Railway 注入的 PORT 环境变量
+CMD ["sh", "-c", "pnpm --filter @companion/web start --port ${PORT:-3000}"]
