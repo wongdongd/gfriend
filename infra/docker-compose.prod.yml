@@ -1,6 +1,9 @@
 # 生产环境 docker-compose
 # 用法: docker compose -f infra/docker-compose.prod.yml up -d
 # 适合单台 VPS 部署（Hetzner/DigitalOcean 等）
+#
+# 注意：API 容器已内置 Celery Worker（entrypoint.sh 同时启动两者），
+# 无需单独的 worker 服务。如需独立扩展 Worker，取消下方注释即可。
 
 version: "3.9"
 
@@ -62,32 +65,32 @@ services:
       redis:
         condition: service_healthy
 
-  worker:
-    build:
-      context: ..
-      dockerfile: infra/docker/worker.Dockerfile
-    restart: always
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-companion}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-companion}
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
-      - LLM_API_KEY=${LLM_API_KEY}
-      - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
-      - LLM_BASE_URL=${LLM_BASE_URL:-https://api.openai.com/v1}
-      - IMAGE_PROVIDER=${IMAGE_PROVIDER:-dummy}
-      - IMAGE_API_KEY=${IMAGE_API_KEY}
-      - S3_ENDPOINT=${S3_ENDPOINT}
-      - S3_REGION=${S3_REGION:-auto}
-      - S3_BUCKET=${S3_BUCKET}
-      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
-      - S3_SECRET_KEY=${S3_SECRET_KEY}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+  # 可选：独立 Worker（需要高并发图片/视频生成时启用）
+  # worker:
+  #   build:
+  #     context: ..
+  #     dockerfile: infra/docker/api.Dockerfile
+  #   restart: always
+  #   entrypoint: ["celery", "-A", "app.worker", "worker", "-Q", "image,video,safety,celery", "-l", "info"]
+  #   working_dir: /app/apps/worker
+  #   environment:
+  #     - DATABASE_URL=postgresql+asyncpg://${DB_USER:-companion}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-companion}
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - CELERY_BROKER_URL=redis://redis:6379/1
+  #     - CELERY_RESULT_BACKEND=redis://redis:6379/2
+  #     - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+  #     - LLM_API_KEY=${LLM_API_KEY}
+  #     - LLM_BASE_URL=${LLM_BASE_URL:-https://api.openai.com/v1}
+  #     - IMAGE_PROVIDER=${IMAGE_PROVIDER:-dummy}
+  #     - S3_ENDPOINT=${S3_ENDPOINT}
+  #     - S3_BUCKET=${S3_BUCKET}
+  #     - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+  #     - S3_SECRET_KEY=${S3_SECRET_KEY}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
 
   web:
     build:

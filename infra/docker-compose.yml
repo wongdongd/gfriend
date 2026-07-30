@@ -1,7 +1,10 @@
+# 开发环境 docker-compose
+# 用法: docker compose -f infra/docker-compose.yml up -d
+# API 容器已内置 Celery Worker（entrypoint.sh 同时启动）
+
 version: "3.9"
 
 services:
-  # ========== 基础设施 ==========
   postgres:
     image: pgvector/pgvector:pg16
     container_name: companion-postgres
@@ -53,15 +56,15 @@ services:
       timeout: 5s
       retries: 5
 
-  # ========== 应用服务 ==========
+  # API + Worker 合并在一个容器（entrypoint.sh 同时启动 FastAPI 和 Celery）
   api:
     build:
-      context: ../..
+      context: ..
       dockerfile: infra/docker/api.Dockerfile
     container_name: companion-api
     restart: unless-stopped
     env_file:
-      - ../../.env
+      - ../.env
     environment:
       DATABASE_URL: postgresql+asyncpg://companion:companion@postgres:5432/companion
       DATABASE_SYNC_URL: postgresql://companion:companion@postgres:5432/companion
@@ -78,38 +81,10 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    command: >
-      sh -c "cd /app/backend &&
-             alembic upgrade head &&
-             cd /app/apps/api &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000"
-
-  worker:
-    build:
-      context: ../..
-      dockerfile: infra/docker/api.Dockerfile
-    container_name: companion-worker
-    restart: unless-stopped
-    env_file:
-      - ../../.env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://companion:companion@postgres:5432/companion
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-      S3_ENDPOINT: http://minio:9000
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: >
-      sh -c "cd /app/apps/worker &&
-             celery -A app.worker worker -Q image,video,safety,celery -l info"
 
   web:
     build:
-      context: ../..
+      context: ..
       dockerfile: infra/docker/web.Dockerfile
     container_name: companion-web
     restart: unless-stopped

@@ -1,6 +1,10 @@
 # Railway 自动部署
-# 每次 push main 分支自动触发 Railway 重新部署
-# 前置条件：Railway 项目已关联本仓库，三个服务已创建
+# 每次 push main 分支自动触发 Railway 重新构建
+# Railway 通过 GitHub App 监听仓库变更，无需手动配置 Webhook
+#
+# 服务列表（2 个）：
+#   - api  (infra/docker/api.Dockerfile)  → FastAPI + Celery Worker（同一容器）
+#   - web  (infra/docker/web.Dockerfile)  → Next.js 前端
 
 name: Deploy to Railway
 
@@ -20,12 +24,10 @@ jobs:
           echo "Railway 通过 GitHub App 自动检测 push 事件"
           echo "无需额外配置 — Railway 会自动重新构建变更的服务"
           echo ""
-          echo "确保 Railway 中已配置以下环境变量："
-          echo "  DATABASE_URL     — Railway PostgreSQL 插件自动注入"
-          echo "  REDIS_URL        — Railway Redis 插件自动注入"
-          echo "  SECRET_KEY       — 手动设置"
-          echo "  LLM_API_KEY      — 手动设置"
-          echo "  LLM_BASE_URL     — 手动设置（自托管/DeepSeek/Ollama）"
+          echo "Railway 项目需配置以下环境变量："
+          echo "  SECRET_KEY       — python3 -c 'import secrets; print(secrets.token_urlsafe(32))'"
+          echo "  LLM_API_KEY      — OpenAI / DeepSeek API Key"
+          echo "  LLM_BASE_URL     — API 地址（自托管/DeepSeek/Ollama）"
           echo "  S3_ENDPOINT      — Cloudflare R2 或其他 S3 兼容存储"
-          echo "  S3_ACCESS_KEY    — 手动设置"
-          echo "  S3_SECRET_KEY    — 手动设置"
+          echo "  S3_ACCESS_KEY    — 对象存储 Access Key"
+          echo "  S3_SECRET_KEY    — 对象存储 Secret Key"

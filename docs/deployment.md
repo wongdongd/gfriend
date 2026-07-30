@@ -15,7 +15,7 @@ AI 人物陪伴平台支持两种部署方式：
 Railway 平台
 ├── Web 服务    (infra/docker/web.Dockerfile)    → 用户端 Next.js
 ├── API 服务    (infra/docker/api.Dockerfile)    → FastAPI 后端
-├── Worker 服务 (infra/docker/worker.Dockerfile) → Celery 异步任务
+├── API 服务    (infra/docker/api.Dockerfile)    → FastAPI + Celery Worker（同一容器）
 ├── PostgreSQL  (Railway 插件)                   → 数据库 + pgvector
 └── Redis       (Railway 插件)                   → 缓存 + 队列
 
@@ -38,17 +38,18 @@ Railway 平台
 
 1. 登录 Railway → New Project → **Deploy from GitHub repo**
 2. 选择 `wongdongd/gfriend`
-3. Railway 会自动检测到仓库，但需要手动配置三个服务
+3. Railway 会自动检测到仓库，但需要手动配置两个服务
 
-#### 3. 添加三个服务
+#### 3. 添加两个服务
 
 Railway 中点击 **+ New Service**，选择同一个 GitHub 仓库，为每个服务配置：
 
 | 服务 | Dockerfile 路径 | 端口 | 最小内存 |
 |---|---|---|---|
 | **api** | `infra/docker/api.Dockerfile` | 8000 | 512 MB |
-| **worker** | `infra/docker/worker.Dockerfile` | 无 | 512 MB |
 | **web** | `infra/docker/web.Dockerfile` | 3000 | 256 MB |
+
+> API 容器已内置 Celery Worker（通过 entrypoint.sh 同时启动），无需额外的 worker 服务。
 
 > 在 Railway 的 Service Settings → Builder 中，将 **Root Directory** 设为 `/`，**Dockerfile Path** 设为上述路径。
 
