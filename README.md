@@ -81,6 +81,29 @@ pnpm dev                       # http://localhost:3000
 - [产品方案](docs/01-mvp-product-plan.md)
 - [原始实现方案](docs/02-mvp-implementation-plan.md)
 - [Python 后端实现方案](docs/03-python-implementation-plan.md)
+- [部署指南](docs/deployment.md) ← **Railway 一键部署 / Docker Compose VPS 部署**
+
+## 部署
+
+推荐 **Railway**（全托管，免运维）。详见 [docs/deployment.md](docs/deployment.md)。
+
+### 30 秒部署到 Railway
+
+1. Fork 本仓库到你的 GitHub
+2. 在 [Railway](https://railway.app) 中 New Project → Deploy from GitHub
+3. 添加三个服务（api / worker / web），Dockerfile 路径见部署文档
+4. 添加 PostgreSQL + Redis 插件
+5. 设置 `SECRET_KEY` + `LLM_API_KEY` 环境变量
+6. 完成！访问 Web 服务的公开 URL
+
+### 自托管模型
+
+任何兼容 OpenAI Chat Completions API 的模型服务都直接支持。修改环境变量即可：
+
+```bash
+LLM_BASE_URL=http://your-gpu:11434/v1   # Ollama
+LLM_MODEL=qwen2.5:7b
+```
 
 ## 开发阶段
 

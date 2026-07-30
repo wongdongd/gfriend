@@ -1,25 +1,27 @@
-# API + Worker 共用 Dockerfile（基于同一 Python 镜像）
+# API 服务生产 Dockerfile
+# Railway 构建：Root Directory = /, Dockerfile path = infra/docker/api.Dockerfile
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# 系统依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libpq-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 Python 依赖
+# 依赖层（利用 Docker 缓存）
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
-# 复制后端内核
+# 复制代码
 COPY backend/ /app/backend/
-
-# 设置 PYTHONPATH
-ENV PYTHONPATH=/app/backend
-
-# 复制 API 与 Worker 代码
 COPY apps/api/ /app/apps/api/
-COPY apps/worker/ /app/apps/worker/
+
+ENV PYTHONPATH=/app/backend
+ENV APP_PORT=8000
+
+# 启动前自动执行数据库迁移
+CMD ["sh", "-c", "\
+  cd /app/backend && alembic upgrade head && \
+  cd /app/apps/api && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 
 EXPOSE 8000
