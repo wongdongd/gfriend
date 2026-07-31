@@ -1,41 +1,43 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
-import type { Character } from '@companion/shared';
+import { api, translateError } from '@/lib/api';
 
 const RELATIONSHIPS = [
-  { code: 'friend', label: '朋友', icon: '🤝', desc: '互相支持的日常伙伴' },
-  { code: 'lover', label: '恋人', icon: '💕', desc: '亲密浪漫的关系' },
-  { code: 'healer', label: '治愈伙伴', icon: '🌙', desc: '温柔倾听与安慰' },
-  { code: 'study_buddy', label: '学习搭子', icon: '📚', desc: '一起专注与进步' },
-  { code: 'listener', label: '倾听者', icon: '👂', desc: '安静地听你说' },
-  { code: 'original', label: '原创角色', icon: '✨', desc: '完全自定义' },
+  { code: 'friend', icon: '🤝' },
+  { code: 'lover', icon: '💕' },
+  { code: 'healer', icon: '🌙' },
+  { code: 'study_buddy', icon: '📚' },
+  { code: 'listener', icon: '👂' },
+  { code: 'original', icon: '✨' },
 ];
 
 const PERSONALITIES = [
-  { code: 'gentle', label: '温柔可靠', desc: '温暖、耐心、让人安心' },
-  { code: 'energetic', label: '活泼元气', desc: '开朗、热情、充满活力' },
-  { code: 'calm', label: '冷静理性', desc: '沉稳、客观、思路清晰' },
-  { code: 'humorous', label: '幽默毒舌', desc: '有趣、犀利但不伤人' },
-  { code: 'quiet_healing', label: '安静治愈', desc: '轻柔、慢节奏、治愈感' },
+  { code: 'gentle', icon: '🌿' },
+  { code: 'energetic', icon: '⚡' },
+  { code: 'calm', icon: '🧊' },
+  { code: 'humorous', icon: '😏' },
+  { code: 'quiet_healing', icon: '🍃' },
 ];
 
 const STYLES = [
-  { code: 'cinematic', label: '写实电影感' },
-  { code: 'fresh_life', label: '清新生活' },
-  { code: 'fashion_mag', label: '时尚杂志' },
-  { code: '3d_anime', label: '3D 动画' },
-  { code: 'anime', label: '日系插画' },
-  { code: 'retro_film', label: '复古胶片' },
-  { code: 'ink_wash', label: '国风水墨' },
+  { code: 'cinematic' },
+  { code: 'fresh_life' },
+  { code: 'fashion_mag' },
+  { code: '3d_anime' },
+  { code: 'anime' },
+  { code: 'retro_film' },
+  { code: 'ink_wash' },
 ];
 
 export default function CreatePage() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const t = useTranslations();
+
   const [step, setStep] = useState(1);
   const [relationship, setRelationship] = useState('');
   const [personality, setPersonality] = useState('');
@@ -48,18 +50,17 @@ export default function CreatePage() {
     if (!loading && !user) router.push('/login');
   }, [user, loading, router]);
 
-  const canProceed = () => {
+  const canNext = () => {
     if (step === 1) return !!relationship;
     if (step === 2) return !!personality;
     if (step === 3) return !!style;
-    if (step === 4) return name.trim().length > 0;
-    return false;
+    return step === 4 && name.trim().length > 0;
   };
 
-  const handleCreate = async () => {
+  const create = async () => {
     setCreating(true);
     try {
-      const char = await api.post<Character>('/characters', {
+      await api.post('/characters', {
         name: name.trim(),
         companion_preference: preference.trim() || null,
         relationship_template_code: relationship,
@@ -68,19 +69,26 @@ export default function CreatePage() {
       });
       router.push('/chat');
     } catch (err) {
-      alert(err instanceof Error ? err.message : '创建失败');
+      alert(translateError(t, err));
     } finally {
       setCreating(false);
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">加载中...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-400">
+        {t('common.loading')}
+      </div>
+    );
+  }
+
   if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
       <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* 进度条 */}
+        {/* 步骤指示器 */}
         <div className="flex items-center justify-between mb-8">
           {[1, 2, 3, 4].map((s) => (
             <div key={s} className="flex items-center flex-1">
@@ -91,133 +99,154 @@ export default function CreatePage() {
               >
                 {s}
               </div>
-              {s < 4 && <div className={`flex-1 h-0.5 mx-2 ${step > s ? 'bg-brand-600' : 'bg-gray-200'}`} />}
+              {s < 4 && (
+                <div className={`flex-1 h-0.5 mx-2 ${step > s ? 'bg-brand-600' : 'bg-gray-200'}`} />
+              )}
             </div>
           ))}
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          {/* Step 1: 关系 */}
+          {/* 第 1 步：关系 */}
           {step === 1 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">选择你们的关系</h2>
-              <p className="text-sm text-gray-500 mb-6">这决定了角色与你互动的基本方式</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">{t('create.chooseRelationship')}</h2>
+              <p className="text-sm text-gray-500 mb-6">{t('create.relationshipDesc')}</p>
               <div className="grid grid-cols-2 gap-3">
                 {RELATIONSHIPS.map((r) => (
                   <button
                     key={r.code}
                     onClick={() => setRelationship(r.code)}
                     className={`text-left p-4 rounded-xl border-2 transition ${
-                      relationship === r.code ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
+                      relationship === r.code
+                        ? 'border-brand-600 bg-brand-50'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <div className="text-2xl mb-1">{r.icon}</div>
-                    <div className="font-medium text-gray-900">{r.label}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{r.desc}</div>
+                    <div className="font-medium text-gray-900">
+                      {t(`create.relationships.${r.code}.label`)}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {t(`create.relationships.${r.code}.desc`)}
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Step 2: 人格 */}
+          {/* 第 2 步：性格 */}
           {step === 2 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">选择 TA 的性格</h2>
-              <p className="text-sm text-gray-500 mb-6">原型决定默认表达方式与互动边界</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">{t('create.choosePersonality')}</h2>
+              <p className="text-sm text-gray-500 mb-6">{t('create.personalityDesc')}</p>
               <div className="space-y-2">
                 {PERSONALITIES.map((p) => (
                   <button
                     key={p.code}
                     onClick={() => setPersonality(p.code)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition ${
-                      personality === p.code ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
+                      personality === p.code
+                        ? 'border-brand-600 bg-brand-50'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <div className="font-medium text-gray-900">{p.label}</div>
-                    <div className="text-sm text-gray-500 mt-0.5">{p.desc}</div>
+                    <div className="font-medium text-gray-900">
+                      {p.icon} {t(`create.personalities.${p.code}.label`)}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-0.5">
+                      {t(`create.personalities.${p.code}.desc`)}
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Step 3: 外观风格 */}
+          {/* 第 3 步：风格 */}
           {step === 3 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">选择外观风格</h2>
-              <p className="text-sm text-gray-500 mb-6">角色生成的图片会使用这个风格</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">{t('create.chooseStyle')}</h2>
+              <p className="text-sm text-gray-500 mb-6">{t('create.styleDesc')}</p>
               <div className="grid grid-cols-2 gap-3">
                 {STYLES.map((s) => (
                   <button
                     key={s.code}
                     onClick={() => setStyle(s.code)}
                     className={`p-4 rounded-xl border-2 transition text-center ${
-                      style === s.code ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-gray-300'
+                      style === s.code
+                        ? 'border-brand-600 bg-brand-50'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <div className="font-medium text-gray-900 text-sm">{s.label}</div>
+                    <div className="font-medium text-gray-900 text-sm">
+                      {t(`create.styles.${s.code}.label`)}
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Step 4: 命名与偏好 */}
+          {/* 第 4 步：名字 */}
           {step === 4 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">给 TA 起个名字</h2>
-              <p className="text-sm text-gray-500 mb-6">以及你希望 TA 怎样陪伴你</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">{t('create.nameTitle')}</h2>
+              <p className="text-sm text-gray-500 mb-6">{t('create.nameDesc')}</p>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">名字</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('create.nameLabel')}
+                  </label>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     maxLength={64}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
-                    placeholder="给你的角色起个名字"
+                    placeholder={t('create.namePlaceholder')}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    希望 TA 怎样陪伴你 <span className="text-gray-400">（可选）</span>
+                    {t('create.preferenceLabel')}{' '}
+                    <span className="text-gray-400">{t('create.preferenceOptional')}</span>
                   </label>
                   <textarea
                     value={preference}
                     onChange={(e) => setPreference(e.target.value)}
                     rows={3}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none resize-none"
-                    placeholder="例如：在我难过的时候安静地陪我，在我开心时一起庆祝"
+                    placeholder={t('create.preferencePlaceholder')}
                   />
                 </div>
               </div>
             </div>
           )}
 
-          {/* 导航按钮 */}
+          {/* 底部按钮 */}
           <div className="flex justify-between mt-8">
             <button
               onClick={() => (step > 1 ? setStep(step - 1) : router.back())}
               className="px-4 py-2 text-gray-600 hover:text-gray-900"
             >
-              {step > 1 ? '上一步' : '返回'}
+              {step > 1 ? t('create.prev') : t('common.back')}
             </button>
             {step < 4 ? (
               <button
                 onClick={() => setStep(step + 1)}
-                disabled={!canProceed()}
+                disabled={!canNext()}
                 className="rounded-full bg-brand-600 px-8 py-2 text-white font-medium hover:bg-brand-700 disabled:opacity-50"
               >
-                下一步
+                {t('create.next')}
               </button>
             ) : (
               <button
-                onClick={handleCreate}
-                disabled={!canProceed() || creating}
+                onClick={create}
+                disabled={!canNext() || creating}
                 className="rounded-full bg-brand-600 px-8 py-2 text-white font-medium hover:bg-brand-700 disabled:opacity-50"
               >
-                {creating ? '创建中...' : '开始相识'}
+                {creating ? t('create.creating') : t('create.startAcquaintance')}
               </button>
             )}
           </div>

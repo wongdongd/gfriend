@@ -1,0 +1,231 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "back": "Volver",
+    "aiProductNotice": "Este es un producto de IA. Los personajes no son reales y no tienen consciencia."
+  },
+  "nav": {
+    "brand": "Companion",
+    "myCharacters": "Mis personajes",
+    "create": "Crear personaje",
+    "login": "Iniciar sesión",
+    "getStarted": "Empezar",
+    "freeStart": "Empezar gratis",
+    "continueChat": "Seguir hablando"
+  },
+  "home": {
+    "heroTitle1": "Crea tu propio",
+    "heroTitle2": "personaje compañero de IA",
+    "heroSubtitle": "Define el aspecto, la personalidad y la relación de un personaje con plantillas rápidas. El chat por texto es el centro: las imágenes y vídeos de IA hacen que tu compañero sea visible y presente.",
+    "valueExclusiveTitle": "Solo tuyo",
+    "valueExclusiveDesc": "El personaje lo formas tú: nombre, personalidad, apariencia y forma de llevarse bien son tu elección.",
+    "valueCompanionshipTitle": "Compañía",
+    "valueCompanionshipDesc": "Tu compañero recuerda lo importante y responde con cariño en el momento adecuado.",
+    "valueVisibleTitle": "Visible",
+    "valueVisibleDesc": "Autofotos, imágenes de escena y saludos dinámicos hacen visible la relación de texto.",
+    "valueGrowthTitle": "Crecimiento",
+    "valueGrowthDesc": "Las experiencias compartidas se vuelven recuerdos, un álbum y una relación que evoluciona.",
+    "safetyTitle": "Transparencia y seguridad",
+    "safetyDesc": "Todos los personajes son IA y no tienen consciencia real. Protegemos tus conversaciones e imágenes privadas y fijamos límites de edad, contenido y seguridad emocional. Puedes ver, editar o eliminar los recuerdos de un personaje cuando quieras.",
+    "footer": "© 2025 Companion · Un producto de IA; los personajes no implican relaciones personales reales."
+  },
+  "login": {
+    "welcomeBack": "Bienvenido de nuevo",
+    "createAccount": "Crear cuenta",
+    "loginSubtitle": "Inicia sesión para seguir hablando con tu personaje",
+    "registerSubtitle": "Empieza a crear tu propio compañero de IA",
+    "email": "Correo",
+    "emailPlaceholder": "tu@ejemplo.com",
+    "password": "Contraseña",
+    "passwordPlaceholder": "Al menos 6 caracteres",
+    "processing": "Procesando...",
+    "submitLogin": "Iniciar sesión",
+    "submitRegister": "Registrarse",
+    "noAccount": "¿No tienes una cuenta?",
+    "haveAccount": "¿Ya tienes una cuenta?",
+    "toggleRegister": "Regístrate",
+    "toggleLogin": "Iniciar sesión",
+    "aiNotice": "Este es un producto de IA. Los personajes no son reales y no tienen consciencia."
+  },
+  "chat": {
+    "myCharacters": "Mis personajes",
+    "noCharacters": "Aún no has creado ningún personaje",
+    "createFirst": "Crea tu primer personaje",
+    "clickToChat": "Toca para empezar a chatear",
+    "aiTag": "Compañero de IA · no es una persona real",
+    "notReal": "No es una persona real",
+    "inputPlaceholder": "Dile algo a {name}...",
+    "replying": "Respondiendo...",
+    "send": "Enviar",
+    "createNew": "Nuevo personaje",
+    "errorPrefix": "[Error] "
+  },
+  "create": {
+    "chooseRelationship": "Elige tu relación",
+    "relationshipDesc": "Esto decide cómo interactúa el personaje contigo",
+    "choosePersonality": "Elige su personalidad",
+    "personalityDesc": "El arquetipo fija la forma de expresarse y los límites de interacción",
+    "chooseStyle": "Elige un estilo visual",
+    "styleDesc": "Las imágenes del personaje usarán este estilo",
+    "nameTitle": "Ponle un nombre",
+    "nameDesc": "Y cómo te gustaría que te acompañe",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "Nombra a tu personaje",
+    "preferenceLabel": "Cómo te gustaría que te acompañe",
+    "preferenceOptional": "(opcional)",
+    "preferencePlaceholder": "p. ej. Quédate conmigo en silencio cuando estoy triste, celébralo conmigo cuando soy feliz",
+    "prev": "Atrás",
+    "next": "Siguiente",
+    "startAcquaintance": "Empezar a conocernos",
+    "creating": "Creando...",
+    "createFailed": "Error al crear",
+    "relationships": {
+      "friend": {
+        "label": "Amigo",
+        "desc": "Un compañero diario que te apoya"
+      },
+      "lover": {
+        "label": "Pareja",
+        "desc": "Una relación íntima y romántica"
+      },
+      "healer": {
+        "label": "Sanador",
+        "desc": "Escucha y consuela con dulzura"
+      },
+      "study_buddy": {
+        "label": "Compañero de estudio",
+        "desc": "Enfócate y crece junto a él"
+      },
+      "listener": {
+        "label": "Oyente",
+        "desc": "Te escucha en silencio"
+      },
+      "original": {
+        "label": "Original",
+        "desc": "Totalmente personalizable"
+      }
+    },
+    "personalities": {
+      "gentle": {
+        "label": "Dulce y fiable",
+        "desc": "Cálido, paciente, tranquilizador"
+      },
+      "energetic": {
+        "label": "Enérgico",
+        "desc": "Alegre, apasionado, lleno de vida"
+      },
+      "calm": {
+        "label": "Calmado y racional",
+        "desc": "Firme, objetivo, claro"
+      },
+      "humorous": {
+        "label": "Agudo y divertido",
+        "desc": "Divertido, incisivo pero nunca hiriente"
+      },
+      "quiet_healing": {
+        "label": "Tranquilo y sanador",
+        "desc": "Suave, pausado, reconfortante"
+      }
+    },
+    "styles": {
+      "cinematic": {
+        "label": "Realismo cinematográfico"
+      },
+      "fresh_life": {
+        "label": "Vida fresca y diaria"
+      },
+      "fashion_mag": {
+        "label": "Revista de moda"
+      },
+      "3d_anime": {
+        "label": "Animación 3D"
+      },
+      "anime": {
+        "label": "Ilustración japonesa"
+      },
+      "retro_film": {
+        "label": "Película retro"
+      },
+      "ink_wash": {
+        "label": "Tinta tradicional"
+      }
+    }
+  },
+  "memories": {
+    "title": "Centro de recuerdos",
+    "backToChat": "Volver al chat",
+    "filterAll": "Todos",
+    "filterCandidate": "Pendientes",
+    "filterConfirmed": "Confirmados",
+    "empty": "Aún no hay recuerdos",
+    "emptyDesc": "Tu personaje recuerda lo importante que mencionas en las conversaciones",
+    "statusConfirmed": "Confirmado",
+    "statusCandidate": "Pendiente",
+    "confirm": "Confirmar",
+    "reject": "Rechazar",
+    "delete": "Eliminar",
+    "footer": "Los personajes solo usan los recuerdos que has confirmado. Puedes editarlos o eliminarlos cuando quieras."
+  },
+  "admin": {
+    "title": "Panel de administración",
+    "dashboard": "Panel",
+    "users": "Usuarios",
+    "safety": "Seguridad",
+    "opsDashboard": "Panel de operaciones",
+    "totalUsers": "Usuarios totales",
+    "totalCharacters": "Personajes totales",
+    "totalTasks": "Tareas totales",
+    "pendingSafety": "Eventos de seguridad pendientes",
+    "userManagement": "Gestión de usuarios",
+    "colEmail": "Correo",
+    "colRole": "Rol",
+    "colAgeStatus": "Estado de edad",
+    "colCredits": "Créditos",
+    "colRegistered": "Registrado",
+    "safetyEvents": "Eventos de seguridad",
+    "colRiskType": "Tipo de riesgo",
+    "colSeverity": "Gravedad",
+    "colDisposition": "Disposición",
+    "colTime": "Hora"
+  },
+  "billing": {
+    "title": "Billetera y suscripción",
+    "currentCredits": "Créditos actuales",
+    "plan": "Plan",
+    "freeTier": "Prueba gratuita",
+    "subscriptionTitle": "Suscripción Companion",
+    "subscriptionDesc": "Varios personajes, mayor memoria, cupo mensual de imágenes",
+    "subscribe": "Suscribirse",
+    "creditsPackTitle": "Paquete de créditos",
+    "creditsPackDesc": "100 créditos para generar imágenes y vídeos",
+    "buyCredits": "Comprar créditos",
+    "ledgerTitle": "Historial",
+    "noRecords": "Aún no hay registros",
+    "paymentFailed": "Error al iniciar el pago"
+  },
+  "errors": {
+    "AUTH_TOKEN_MISSING": "Falta el token de autenticación",
+    "AUTH_TOKEN_INVALID": "El token no es válido o ha caducado",
+    "AUTH_TOKEN_PAYLOAD_INVALID": "La carga del token no es válida",
+    "AUTH_USER_INVALID": "El usuario no existe o está deshabilitado",
+    "AUTH_EMAIL_TAKEN": "Este correo ya está registrado",
+    "AUTH_INVALID_CREDENTIALS": "Correo o contraseña incorrectos",
+    "AUTH_ACCOUNT_DISABLED": "Esta cuenta ha sido deshabilitada",
+    "AUTH_REFRESH_INVALID": "El token de actualización no es válido",
+    "PERMISSION_ADMIN_REQUIRED": "Se requiere permiso de administrador",
+    "PERMISSION_OPERATOR_REQUIRED": "Se requiere permiso de operador",
+    "RESOURCE_CHARACTER_NOT_FOUND": "Personaje no encontrado",
+    "RESOURCE_MEMORY_NOT_FOUND": "Recuerdo no encontrado",
+    "RESOURCE_MESSAGE_NOT_FOUND": "Mensaje no encontrado",
+    "RESOURCE_TASK_NOT_FOUND": "Tarea no encontrada",
+    "RESOURCE_ASSET_NOT_FOUND": "Recurso no encontrado",
+    "BILLING_INSUFFICIENT_CREDITS": "Créditos insuficientes",
+    "TASK_CANNOT_CANCEL": "Esta tarea ya no se puede cancelar",
+    "FEEDBACK_INVALID_TYPE": "Tipo de feedback inválido",
+    "BILLING_SUBSCRIPTION_NOT_FOUND": "Suscripción no encontrada",
+    "BILLING_UNSUPPORTED_CHANNEL": "Canal de pago no compatible",
+    "BILLING_SIGNATURE_FAILED": "Falló la verificación de la firma: {reason}",
+    "ASSET_BLOCKED": "Este recurso ha sido bloqueado",
+    "unknown": "Algo salió mal"
+  }
+}

@@ -11,8 +11,12 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from shared.config import settings
 
+from app.core.error_handlers import app_error_handler, validation_error_handler
+from app.core.error_codes import AppError
 from app.routers import (
     admin,
     assets,
@@ -43,6 +47,10 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# 统一错误处理：业务异常 → {code, message, params}
+app.add_exception_handler(AppError, app_error_handler)
+app.add_exception_handler(RequestValidationError, validation_error_handler)
 
 # CORS：开发环境允许 localhost 直连；生产环境通过 CORS_ORIGINS 环境变量配置前端域名
 import os

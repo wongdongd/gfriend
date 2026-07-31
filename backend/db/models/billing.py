@@ -49,7 +49,7 @@ class CreditLedger(Base, UUIDPrimaryKey, TimestampMixin):
         nullable=False,
     )
     type: Mapped[CreditEntryType] = mapped_column(
-        Enum(CreditEntryType, name="credit_entry_type"),
+        Enum(CreditEntryType, name="credit_entry_type", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
     # 金额（正数为入账，负数为出账）
@@ -110,11 +110,11 @@ class Order(Base, UUIDPrimaryKey, TimestampMixin):
         nullable=False,
     )
     type: Mapped[OrderType] = mapped_column(
-        Enum(OrderType, name="order_type"),
+        Enum(OrderType, name="order_type", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
     status: Mapped[OrderStatus] = mapped_column(
-        Enum(OrderStatus, name="order_status"),
+        Enum(OrderStatus, name="order_status", values_callable=lambda obj: [e.value for e in obj]),
         default=OrderStatus.PENDING,
         nullable=False,
     )
@@ -130,7 +130,7 @@ class Order(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 支付渠道
     channel: Mapped[PaymentChannel] = mapped_column(
-        Enum(PaymentChannel, name="payment_channel"),
+        Enum(PaymentChannel, name="payment_channel", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
     # 第三方会话/支付意图 ID
@@ -165,7 +165,7 @@ class Subscription(Base, UUIDPrimaryKey, TimestampMixin):
         nullable=False,
     )
     status: Mapped[SubscriptionStatus] = mapped_column(
-        Enum(SubscriptionStatus, name="subscription_status"),
+        Enum(SubscriptionStatus, name="subscription_status", values_callable=lambda obj: [e.value for e in obj]),
         default=SubscriptionStatus.ACTIVE,
         nullable=False,
     )
@@ -182,7 +182,7 @@ class Subscription(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 渠道
     channel: Mapped[PaymentChannel] = mapped_column(
-        Enum(PaymentChannel, name="payment_channel"),
+        Enum(PaymentChannel, name="payment_channel", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
     provider_subscription_id: Mapped[Optional[str]] = mapped_column(String(255), index=True, nullable=True)

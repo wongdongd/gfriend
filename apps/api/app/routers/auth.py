@@ -3,12 +3,13 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
+from app.core.error_codes import AppError, ErrorCode
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -66,7 +67,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """邮箱注册。"""
     existing = await db.execute(select(User).where(User.email == req.email))
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="该邮箱已注册")
+        raise AppError(ErrorCode.AUTH_EMAIL_TAKEN)
     user = User(email=req.email, email_verified=False, password_hash=hash_password(req.password), display_name=req.display_name, age_status=AgeStatus.UNCONFIRMED)
     db.add(user)
     await db.flush()
@@ -82,9 +83,9 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == req.email))
     user = result.scalar_one_or_none()
     if not user or not user.password_hash or not verify_password(req.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="邮箱或密码错误")
+        raise AppError(ErrorCode.AUTH_INVALID_CREDENTIALS)
     if not user.is_active or user.is_deleted:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="账户已禁用")
+        raise AppError(ErrorCode.AUTH_ACCOUNT_DISABLED)
     return TokenResponse(access_token=create_access_token(user.id), refresh_token=create_refresh_token(user.id), user_id=str(user.id))
 
 
@@ -93,12 +94,12 @@ async def refresh_token(req: RefreshRequest, db: AsyncSession = Depends(get_db))
     """刷新访问令牌。"""
     payload = decode_token(req.refresh_token)
     if payload is None or payload.get("type") != "refresh":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="刷新令牌无效")
+        raise AppError(ErrorCode.AUTH_REFRESH_INVALID)
     user_id = uuid.UUID(payload["sub"])
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户无效")
+        raise AppError(ErrorCode.AUTH_USER_INVALID)
     return TokenResponse(access_token=create_access_token(user.id), refresh_token=create_refresh_token(user.id), user_id=str(user.id))
 
 

@@ -52,7 +52,7 @@ class User(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 年龄与合规
     age_status: Mapped[AgeStatus] = mapped_column(
-        Enum(AgeStatus, name="age_status"),
+        Enum(AgeStatus, name="age_status", values_callable=lambda obj: [e.value for e in obj]),
         default=AgeStatus.UNCONFIRMED,
         nullable=False,
     )
@@ -60,7 +60,7 @@ class User(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 角色
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole, name="user_role"),
+        Enum(UserRole, name="user_role", values_callable=lambda obj: [e.value for e in obj]),
         default=UserRole.USER,
         nullable=False,
     )
@@ -112,7 +112,7 @@ class AuthIdentity(Base, UUIDPrimaryKey, TimestampMixin):
     )
 
     provider: Mapped[AuthProvider] = mapped_column(
-        Enum(AuthProvider, name="auth_provider"),
+        Enum(AuthProvider, name="auth_provider", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
     # 服务商返回的稳定账号 ID（邮箱登录时等于 email）

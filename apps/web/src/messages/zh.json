@@ -1,0 +1,231 @@
+{
+  "common": {
+    "loading": "加载中...",
+    "back": "返回",
+    "aiProductNotice": "这是一个 AI 产品，角色不具备真实意识。"
+  },
+  "nav": {
+    "brand": "陪伴",
+    "myCharacters": "我的角色",
+    "create": "创建新角色",
+    "login": "登录",
+    "getStarted": "开始体验",
+    "freeStart": "免费开始",
+    "continueChat": "继续对话"
+  },
+  "home": {
+    "heroTitle1": "创作属于你的",
+    "heroTitle2": "AI 陪伴人物",
+    "heroSubtitle": "用模板快速定义人物的外貌、性格与关系。以文字对话为核心，通过 AI 图片和视频让人物“看得见”，拥有更强的陪伴感。",
+    "valueExclusiveTitle": "专属感",
+    "valueExclusiveDesc": "人物由你塑造，名字、性格、外观和相处方式都可选择",
+    "valueCompanionshipTitle": "陪伴感",
+    "valueCompanionshipDesc": "人物会记住重要信息，在恰当的语境中回应与关心",
+    "valueVisibleTitle": "可见感",
+    "valueVisibleDesc": "角色自拍、场景图和动态问候让文字关系被看见",
+    "valueGrowthTitle": "成长感",
+    "valueGrowthDesc": "共同经历沉淀为记忆、纪念册和角色关系变化",
+    "safetyTitle": "透明与安全",
+    "safetyDesc": "所有角色均为 AI，不具备真实意识。我们保护你的私密对话和图片，设置年龄、内容与情感安全边界。你可以随时查看、编辑或删除角色的记忆。",
+    "footer": "© 2025 陪伴平台 · 这是一个 AI 产品，角色不暗示真实人际关系"
+  },
+  "login": {
+    "welcomeBack": "欢迎回来",
+    "createAccount": "创建账户",
+    "loginSubtitle": "登录继续与你的角色对话",
+    "registerSubtitle": "开始创建你的专属 AI 陪伴人物",
+    "email": "邮箱",
+    "emailPlaceholder": "you@example.com",
+    "password": "密码",
+    "passwordPlaceholder": "至少 6 位",
+    "processing": "处理中...",
+    "submitLogin": "登录",
+    "submitRegister": "注册",
+    "noAccount": "还没有账户？",
+    "haveAccount": "已有账户？",
+    "toggleRegister": "注册",
+    "toggleLogin": "登录",
+    "aiNotice": "这是一个 AI 产品，角色不具备真实意识。"
+  },
+  "chat": {
+    "myCharacters": "我的角色",
+    "noCharacters": "你还没有创建任何角色",
+    "createFirst": "创建第一个角色",
+    "clickToChat": "点击开始对话",
+    "aiTag": "AI 陪伴角色 · 不具备真实意识",
+    "notReal": "这不是真人",
+    "inputPlaceholder": "对 {name} 说点什么...",
+    "replying": "回复中...",
+    "send": "发送",
+    "createNew": "创建新角色",
+    "errorPrefix": "[错误] "
+  },
+  "create": {
+    "chooseRelationship": "选择你们的关系",
+    "relationshipDesc": "这决定了角色与你互动的基本方式",
+    "choosePersonality": "选择 TA 的性格",
+    "personalityDesc": "原型决定默认表达方式与互动边界",
+    "chooseStyle": "选择外观风格",
+    "styleDesc": "角色生成的图片会使用这个风格",
+    "nameTitle": "给 TA 起个名字",
+    "nameDesc": "以及你希望 TA 怎样陪伴你",
+    "nameLabel": "名字",
+    "namePlaceholder": "给你的角色起个名字",
+    "preferenceLabel": "希望 TA 怎样陪伴你",
+    "preferenceOptional": "（可选）",
+    "preferencePlaceholder": "例如：在我难过的时候安静地陪我，在我开心时一起庆祝",
+    "prev": "上一步",
+    "next": "下一步",
+    "startAcquaintance": "开始相识",
+    "creating": "创建中...",
+    "createFailed": "创建失败",
+    "relationships": {
+      "friend": {
+        "label": "朋友",
+        "desc": "互相支持的日常伙伴"
+      },
+      "lover": {
+        "label": "恋人",
+        "desc": "亲密浪漫的关系"
+      },
+      "healer": {
+        "label": "治愈伙伴",
+        "desc": "温柔倾听与安慰"
+      },
+      "study_buddy": {
+        "label": "学习搭子",
+        "desc": "一起专注与进步"
+      },
+      "listener": {
+        "label": "倾听者",
+        "desc": "安静地听你说"
+      },
+      "original": {
+        "label": "原创角色",
+        "desc": "完全自定义"
+      }
+    },
+    "personalities": {
+      "gentle": {
+        "label": "温柔可靠",
+        "desc": "温暖、耐心、让人安心"
+      },
+      "energetic": {
+        "label": "活泼元气",
+        "desc": "开朗、热情、充满活力"
+      },
+      "calm": {
+        "label": "冷静理性",
+        "desc": "沉稳、客观、思路清晰"
+      },
+      "humorous": {
+        "label": "幽默毒舌",
+        "desc": "有趣、犀利但不伤人"
+      },
+      "quiet_healing": {
+        "label": "安静治愈",
+        "desc": "轻柔、慢节奏、治愈感"
+      }
+    },
+    "styles": {
+      "cinematic": {
+        "label": "写实电影感"
+      },
+      "fresh_life": {
+        "label": "清新生活"
+      },
+      "fashion_mag": {
+        "label": "时尚杂志"
+      },
+      "3d_anime": {
+        "label": "3D 动画"
+      },
+      "anime": {
+        "label": "日系插画"
+      },
+      "retro_film": {
+        "label": "复古胶片"
+      },
+      "ink_wash": {
+        "label": "国风水墨"
+      }
+    }
+  },
+  "memories": {
+    "title": "记忆中心",
+    "backToChat": "返回对话",
+    "filterAll": "全部",
+    "filterCandidate": "待确认",
+    "filterConfirmed": "已确认",
+    "empty": "还没有记忆",
+    "emptyDesc": "角色会在对话中记住你提到的重要信息",
+    "statusConfirmed": "已确认",
+    "statusCandidate": "待确认",
+    "confirm": "确认",
+    "reject": "拒绝",
+    "delete": "删除",
+    "footer": "角色只会使用你确认过的记忆。你可以随时编辑或删除。"
+  },
+  "admin": {
+    "title": "管理后台",
+    "dashboard": "看板",
+    "users": "用户",
+    "safety": "安全",
+    "opsDashboard": "运营看板",
+    "totalUsers": "用户总数",
+    "totalCharacters": "角色总数",
+    "totalTasks": "任务总数",
+    "pendingSafety": "待处理安全事件",
+    "userManagement": "用户管理",
+    "colEmail": "邮箱",
+    "colRole": "角色",
+    "colAgeStatus": "年龄状态",
+    "colCredits": "积分",
+    "colRegistered": "注册时间",
+    "safetyEvents": "安全事件",
+    "colRiskType": "风险类型",
+    "colSeverity": "严重程度",
+    "colDisposition": "处置状态",
+    "colTime": "时间"
+  },
+  "billing": {
+    "title": "钱包与订阅",
+    "currentCredits": "当前积分",
+    "plan": "套餐",
+    "freeTier": "免费体验",
+    "subscriptionTitle": "陪伴订阅",
+    "subscriptionDesc": "多个角色、更大记忆容量、每月图片额度",
+    "subscribe": "订阅",
+    "creditsPackTitle": "积分包",
+    "creditsPackDesc": "100 积分，用于图片和视频生成",
+    "buyCredits": "购买积分",
+    "ledgerTitle": "消费流水",
+    "noRecords": "暂无记录",
+    "paymentFailed": "支付发起失败"
+  },
+  "errors": {
+    "AUTH_TOKEN_MISSING": "未提供认证令牌",
+    "AUTH_TOKEN_INVALID": "令牌无效或已过期",
+    "AUTH_TOKEN_PAYLOAD_INVALID": "令牌载荷无效",
+    "AUTH_USER_INVALID": "用户不存在或已禁用",
+    "AUTH_EMAIL_TAKEN": "该邮箱已注册",
+    "AUTH_INVALID_CREDENTIALS": "邮箱或密码错误",
+    "AUTH_ACCOUNT_DISABLED": "账户已禁用",
+    "AUTH_REFRESH_INVALID": "刷新令牌无效",
+    "PERMISSION_ADMIN_REQUIRED": "需要管理员权限",
+    "PERMISSION_OPERATOR_REQUIRED": "需要运营权限",
+    "RESOURCE_CHARACTER_NOT_FOUND": "角色不存在",
+    "RESOURCE_MEMORY_NOT_FOUND": "记忆不存在",
+    "RESOURCE_MESSAGE_NOT_FOUND": "消息不存在",
+    "RESOURCE_TASK_NOT_FOUND": "任务不存在",
+    "RESOURCE_ASSET_NOT_FOUND": "素材不存在",
+    "BILLING_INSUFFICIENT_CREDITS": "积分不足",
+    "TASK_CANNOT_CANCEL": "任务已不可取消",
+    "FEEDBACK_INVALID_TYPE": "无效的反馈类型",
+    "BILLING_SUBSCRIPTION_NOT_FOUND": "未找到订阅记录",
+    "BILLING_UNSUPPORTED_CHANNEL": "不支持的支付渠道",
+    "BILLING_SIGNATURE_FAILED": "验签失败：{reason}",
+    "ASSET_BLOCKED": "素材已被拦截",
+    "unknown": "出错了"
+  }
+}

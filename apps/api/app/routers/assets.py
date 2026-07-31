@@ -4,11 +4,12 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
+from app.core.error_codes import AppError, ErrorCode
 from db.models.user import User
 from shared.config import settings
 from shared.database import get_db
@@ -72,9 +73,9 @@ async def get_signed_url(asset_id: uuid.UUID, user: User = Depends(get_current_u
     result = await db.execute(select(Asset).where(Asset.id == asset_id, Asset.owner_id == user.id))
     asset = result.scalar_one_or_none()
     if not asset:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="素材不存在")
+        raise AppError(ErrorCode.RESOURCE_ASSET_NOT_FOUND)
     if asset.safety_status == SafetyStatus.BLOCKED:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="素材已被拦截")
+        raise AppError(ErrorCode.ASSET_BLOCKED)
 
     from provider_adapters.storage import get_storage
 

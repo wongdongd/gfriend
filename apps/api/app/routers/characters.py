@@ -4,12 +4,13 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
+from app.core.error_codes import AppError, ErrorCode
 from db.models.character import Character, CharacterStatus
 from db.models.user import User
 from shared.database import get_db
@@ -82,7 +83,7 @@ async def get_character(character_id: uuid.UUID, user: User = Depends(get_curren
     result = await db.execute(select(Character).where(Character.id == character_id, Character.user_id == user.id))
     character = result.scalar_one_or_none()
     if not character or character.status == CharacterStatus.DELETED:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
+        raise AppError(ErrorCode.RESOURCE_CHARACTER_NOT_FOUND)
     return character
 
 
@@ -92,7 +93,7 @@ async def update_character(character_id: uuid.UUID, req: CharacterUpdate, user: 
     result = await db.execute(select(Character).where(Character.id == character_id, Character.user_id == user.id))
     character = result.scalar_one_or_none()
     if not character:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
+        raise AppError(ErrorCode.RESOURCE_CHARACTER_NOT_FOUND)
     for field, value in req.model_dump(exclude_unset=True).items():
         setattr(character, field, value)
     await db.commit()
@@ -106,7 +107,7 @@ async def delete_character(character_id: uuid.UUID, user: User = Depends(get_cur
     result = await db.execute(select(Character).where(Character.id == character_id, Character.user_id == user.id))
     character = result.scalar_one_or_none()
     if not character:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
+        raise AppError(ErrorCode.RESOURCE_CHARACTER_NOT_FOUND)
     character.status = CharacterStatus.DELETED
     await db.commit()
 

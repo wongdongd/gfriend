@@ -11,12 +11,13 @@ import json
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
+from app.core.error_codes import AppError, ErrorCode
 from db.models.character import Character, CharacterStatus
 from db.models.generation import GenerationTask, OutboxEvent, TaskStatus, TaskType
 from db.models.user import User
@@ -45,12 +46,12 @@ async def create_task(req: CreateTaskRequest, user: User = Depends(get_current_u
     result = await db.execute(select(Character).where(Character.id == uuid.UUID(req.character_id), Character.user_id == user.id))
     character = result.scalar_one_or_none()
     if not character or character.status == CharacterStatus.DELETED:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
+        raise AppError(ErrorCode.RESOURCE_CHARACTER_NOT_FOUND)
 
     # 估算积分消耗（MVP 固定值）
     credits_cost = 10 if req.type == TaskType.IMAGE else 50
     if user.credits_balance < credits_cost:
-        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail="积分不足")
+        raise AppError(ErrorCode.BILLING_INSUFFICIENT_CREDITS)
 
     # 组装输入快照
     input_snapshot = json.dumps({
@@ -102,7 +103,7 @@ async def get_task(task_id: uuid.UUID, user: User = Depends(get_current_user), d
     result = await db.execute(select(GenerationTask).where(GenerationTask.id == task_id, GenerationTask.user_id == user.id))
     task = result.scalar_one_or_none()
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="任务不存在")
+        raise AppError(ErrorCode.RESOURCE_TASK_NOT_FOUND)
     return {
         "id": str(task.id),
         "type": task.type.value,
@@ -120,9 +121,9 @@ async def cancel_task(task_id: uuid.UUID, user: User = Depends(get_current_user)
     result = await db.execute(select(GenerationTask).where(GenerationTask.id == task_id, GenerationTask.user_id == user.id))
     task = result.scalar_one_or_none()
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="任务不存在")
+        raise AppError(ErrorCode.RESOURCE_TASK_NOT_FOUND)
     if task.status not in (TaskStatus.PENDING, TaskStatus.QUEUED):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="任务已不可取消")
+        raise AppError(ErrorCode.TASK_CANNOT_CANCEL)
     task.status = TaskStatus.CANCELLED
     user.credits_balance += task.credits_cost  # 退回积分
     await db.commit()

@@ -9,13 +9,14 @@ import json
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
+from app.core.error_codes import AppError, ErrorCode
 from companion_core.context import assemble_context
 from companion_core.memory_retrieval import retrieve_memories
 from companion_core.safety_guard import (
@@ -31,6 +32,19 @@ from provider_adapters.safety import get_safety_adapter
 from shared.database import get_db
 
 router = APIRouter()
+
+
+# 从 Accept-Language 推断受支持的语言（与前端 locales 一致），默认英文（海外优先）
+def pick_locale(accept_language: str) -> str:
+    for part in accept_language.split(","):
+        code = part.split(";")[0].strip().lower()
+        if code in ("en", "zh", "zh-cn", "zh-tw"):
+            return "zh" if code.startswith("zh") else "en"
+        if code.startswith("ja"):
+            return "ja"
+        if code.startswith("es"):
+            return "es"
+    return "en"
 
 
 class SendMessageRequest(BaseModel):
@@ -50,7 +64,7 @@ async def _get_character(db: AsyncSession, character_id: uuid.UUID, user: User) 
     result = await db.execute(select(Character).where(Character.id == character_id, Character.user_id == user.id))
     character = result.scalar_one_or_none()
     if not character or character.status == CharacterStatus.DELETED:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
+        raise AppError(ErrorCode.RESOURCE_CHARACTER_NOT_FOUND)
     return character
 
 
@@ -89,6 +103,7 @@ async def list_messages(
 async def send_message(
     character_id: uuid.UUID,
     req: SendMessageRequest,
+    request: Request,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -124,7 +139,7 @@ async def send_message(
 
     # 危机场景：直接返回安全响应，不进入角色扮演
     if should_trigger_crisis_response(input_check):
-        crisis_text = get_crisis_response()
+        crisis_text = get_crisis_response(pick_locale(request.headers.get("accept-language", "")))
         assistant_msg = Message(
             conversation_id=conversation.id,
             role=MessageRole.ASSISTANT,
@@ -209,11 +224,11 @@ async def feedback_message(
     result = await db.execute(select(Message).join(Conversation, Message.conversation_id == Conversation.id).where(Message.id == message_id, Conversation.user_id == user.id))
     message = result.scalar_one_or_none()
     if not message:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="消息不存在")
+        raise AppError(ErrorCode.RESOURCE_MESSAGE_NOT_FOUND)
     try:
         message.feedback = MessageFeedback(feedback)
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无效的反馈类型")
+        raise AppError(ErrorCode.FEEDBACK_INVALID_TYPE)
     message.feedback_note = note
     await db.commit()
     return {"ok": True}

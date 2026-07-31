@@ -13,6 +13,8 @@ celery>=5.4.0
 httpx>=0.28.0
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+# bcrypt 4.1+ 与 passlib 1.7.4 的 bcrypt 后端检测不兼容（报错 password cannot be longer than 72 bytes），锁定 4.0.1
+bcrypt==4.0.1
 python-multipart>=0.0.12
 email-validator>=2.2.0
 boto3>=1.35.0

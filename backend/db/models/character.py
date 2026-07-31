@@ -78,7 +78,7 @@ class Character(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 状态
     status: Mapped[CharacterStatus] = mapped_column(
-        Enum(CharacterStatus, name="character_status"),
+        Enum(CharacterStatus, name="character_status", values_callable=lambda obj: [e.value for e in obj]),
         default=CharacterStatus.ACTIVE,
         nullable=False,
     )
@@ -91,7 +91,9 @@ class Character(Base, UUIDPrimaryKey, TimestampMixin):
     memories: Mapped[list["Memory"]] = relationship(
         "Memory", back_populates="character", cascade="all, delete-orphan"
     )
-    assets: Mapped[list["Asset"]] = relationship("Asset", back_populates="character")
+    assets: Mapped[list["Asset"]] = relationship(
+        "Asset", back_populates="character", foreign_keys="Asset.character_id"
+    )
     generation_tasks: Mapped[list["GenerationTask"]] = relationship(
         "GenerationTask", back_populates="character"
     )

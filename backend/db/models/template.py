@@ -34,7 +34,7 @@ class Template(Base, UUIDPrimaryKey, TimestampMixin):
     __tablename__ = "templates"
 
     type: Mapped[TemplateType] = mapped_column(
-        Enum(TemplateType, name="template_type"),
+        Enum(TemplateType, name="template_type", values_callable=lambda obj: [e.value for e in obj]),
         index=True,
         nullable=False,
     )

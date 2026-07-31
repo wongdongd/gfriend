@@ -88,7 +88,7 @@ class Message(Base, UUIDPrimaryKey, TimestampMixin):
     )
 
     role: Mapped[MessageRole] = mapped_column(
-        Enum(MessageRole, name="message_role"),
+        Enum(MessageRole, name="message_role", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -100,7 +100,7 @@ class Message(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 用户反馈
     feedback: Mapped[MessageFeedback] = mapped_column(
-        Enum(MessageFeedback, name="message_feedback"),
+        Enum(MessageFeedback, name="message_feedback", values_callable=lambda obj: [e.value for e in obj]),
         default=MessageFeedback.NONE,
         nullable=False,
     )
@@ -108,7 +108,7 @@ class Message(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 安全状态
     safety_status: Mapped[SafetyStatus] = mapped_column(
-        Enum(SafetyStatus, name="safety_status"),
+        Enum(SafetyStatus, name="safety_status", values_callable=lambda obj: [e.value for e in obj]),
         default=SafetyStatus.PENDING,
         nullable=False,
     )

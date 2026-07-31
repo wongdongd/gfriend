@@ -68,11 +68,11 @@ class GenerationTask(Base, UUIDPrimaryKey, TimestampMixin):
     )
 
     type: Mapped[TaskType] = mapped_column(
-        Enum(TaskType, name="task_type"),
+        Enum(TaskType, name="task_type", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
     status: Mapped[TaskStatus] = mapped_column(
-        Enum(TaskStatus, name="task_status"),
+        Enum(TaskStatus, name="task_status", values_callable=lambda obj: [e.value for e in obj]),
         default=TaskStatus.PENDING,
         nullable=False,
     )
@@ -113,7 +113,7 @@ class GenerationTask(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 审核状态
     safety_status: Mapped[SafetyStatus] = mapped_column(
-        Enum(SafetyStatus, name="safety_status"),
+        Enum(SafetyStatus, name="safety_status", values_callable=lambda obj: [e.value for e in obj]),
         default=SafetyStatus.PENDING,
         nullable=False,
     )

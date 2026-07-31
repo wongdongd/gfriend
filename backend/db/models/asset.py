@@ -61,11 +61,11 @@ class Asset(Base, UUIDPrimaryKey, TimestampMixin):
     )
 
     type: Mapped[AssetType] = mapped_column(
-        Enum(AssetType, name="asset_type"),
+        Enum(AssetType, name="asset_type", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
     source: Mapped[AssetSource] = mapped_column(
-        Enum(AssetSource, name="asset_source"),
+        Enum(AssetSource, name="asset_source", values_callable=lambda obj: [e.value for e in obj]),
         default=AssetSource.USER_UPLOAD,
         nullable=False,
     )
@@ -85,7 +85,7 @@ class Asset(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 审核状态（复用 SafetyStatus）
     safety_status: Mapped[SafetyStatus] = mapped_column(
-        Enum(SafetyStatus, name="safety_status"),
+        Enum(SafetyStatus, name="safety_status", values_callable=lambda obj: [e.value for e in obj]),
         default=SafetyStatus.PENDING,
         nullable=False,
     )
@@ -101,7 +101,9 @@ class Asset(Base, UUIDPrimaryKey, TimestampMixin):
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    character: Mapped[Optional["Character"]] = relationship("Character", back_populates="assets")
+    character: Mapped[Optional["Character"]] = relationship(
+        "Character", back_populates="assets", foreign_keys="Asset.character_id"
+    )
 
 
 class Work(Base, UUIDPrimaryKey, TimestampMixin):

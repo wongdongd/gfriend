@@ -4,12 +4,13 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
+from app.core.error_codes import AppError, ErrorCode
 from db.models.memory import Memory, MemoryStatus, MemoryType
 from db.models.user import User
 from shared.database import get_db
@@ -61,7 +62,7 @@ async def update_memory(memory_id: uuid.UUID, req: MemoryUpdate, user: User = De
     result = await db.execute(select(Memory).where(Memory.id == memory_id, Memory.user_id == user.id))
     memory = result.scalar_one_or_none()
     if not memory:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="记忆不存在")
+        raise AppError(ErrorCode.RESOURCE_MEMORY_NOT_FOUND)
     for field, value in req.model_dump(exclude_unset=True).items():
         setattr(memory, field, value)
     await db.commit()
@@ -74,6 +75,6 @@ async def delete_memory(memory_id: uuid.UUID, user: User = Depends(get_current_u
     result = await db.execute(select(Memory).where(Memory.id == memory_id, Memory.user_id == user.id))
     memory = result.scalar_one_or_none()
     if not memory:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="记忆不存在")
+        raise AppError(ErrorCode.RESOURCE_MEMORY_NOT_FOUND)
     await db.delete(memory)
     await db.commit()

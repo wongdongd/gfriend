@@ -1,0 +1,231 @@
+{
+  "common": {
+    "loading": "読み込み中...",
+    "back": "戻る",
+    "aiProductNotice": "これは AI 製品です。キャラクターに実際の意識はありません。"
+  },
+  "nav": {
+    "brand": "Companion",
+    "myCharacters": "マイキャラ",
+    "create": "キャラを作成",
+    "login": "ログイン",
+    "getStarted": "はじめる",
+    "freeStart": "無料ではじめる",
+    "continueChat": "続きを話す"
+  },
+  "home": {
+    "heroTitle1": "あなただけの",
+    "heroTitle2": "AI 陪伴（パートナー）キャラ",
+    "heroSubtitle": "テンプレートで外見・性格・関係を手軽に設定。テキスト会話が中心で、AI 画像や動画でキャラを「見える存在」にします。",
+    "valueExclusiveTitle": "専属感",
+    "valueExclusiveDesc": "キャラはあなたが作る。名前・性格・外見・接し方はすべてあなたの選択です",
+    "valueCompanionshipTitle": "陪伴（そばにいる）感",
+    "valueCompanionshipDesc": "大事なことを覚え、ふさわしい場面で応え、気遣います",
+    "valueVisibleTitle": "見える感",
+    "valueVisibleDesc": "自撮り・シーン画像・動的な挨拶で、テキストの関係が目に見えるように",
+    "valueGrowthTitle": "成長感",
+    "valueGrowthDesc": "共に過ごした経験が記憶・アルバム・関係の変化として蓄積します",
+    "safetyTitle": "透明性と安全",
+    "safetyDesc": "すべてのキャラクターは AI で、実際の意識はありません。私たちはあなたのプライベートな会話と画像を保護し、年齢・コンテンツ・感情の安全境界を設けます。キャラの記憶はいつでも確認・編集・削除できます。",
+    "footer": "© 2025 Companion · AI 製品です。キャラクターは実在の人間関係を意味するものではありません。"
+  },
+  "login": {
+    "welcomeBack": "おかえりなさい",
+    "createAccount": "アカウント作成",
+    "loginSubtitle": "ログインしてキャラとの会話を続ける",
+    "registerSubtitle": "あなた専用の AI 陪伴を作りはじめよう",
+    "email": "メールアドレス",
+    "emailPlaceholder": "you@example.com",
+    "password": "パスワード",
+    "passwordPlaceholder": "6 文字以上",
+    "processing": "処理中...",
+    "submitLogin": "ログイン",
+    "submitRegister": "登録",
+    "noAccount": "アカウントをお持ちでない方",
+    "haveAccount": "すでにアカウントをお持ちの方",
+    "toggleRegister": "登録",
+    "toggleLogin": "ログイン",
+    "aiNotice": "これは AI 製品です。キャラクターに実際の意識はありません。"
+  },
+  "chat": {
+    "myCharacters": "マイキャラ",
+    "noCharacters": "まだキャラを作っていません",
+    "createFirst": "最初のキャラを作成",
+    "clickToChat": "タップして会話開始",
+    "aiTag": "AI 陪伴キャラ · 実在の人間ではありません",
+    "notReal": "実在の人間ではありません",
+    "inputPlaceholder": "{name} に何か伝えてみましょう...",
+    "replying": "返信中...",
+    "send": "送信",
+    "createNew": "新規キャラ",
+    "errorPrefix": "[エラー] "
+  },
+  "create": {
+    "chooseRelationship": "関係を選ぶ",
+    "relationshipDesc": "キャラがあなたと接する基本のスタイルが決まります",
+    "choosePersonality": "性格を選ぶ",
+    "personalityDesc": "原型でデフォルトの表現方法と境界が決まります",
+    "chooseStyle": "外見のスタイルを選ぶ",
+    "styleDesc": "キャラの生成画像にこのスタイルが使われます",
+    "nameTitle": "名前をつけよう",
+    "nameDesc": "そして、どんなふうに陪伴してほしいか",
+    "nameLabel": "名前",
+    "namePlaceholder": "キャラに名前をつけてください",
+    "preferenceLabel": "どんなふうに陪伴してほしいか",
+    "preferenceOptional": "（任意）",
+    "preferencePlaceholder": "例：落ち込んだときは静かにそばにいて、嬉しいときは一緒に喜んで",
+    "prev": "戻る",
+    "next": "次へ",
+    "startAcquaintance": "ご挨拶を始める",
+    "creating": "作成中...",
+    "createFailed": "作成に失敗しました",
+    "relationships": {
+      "friend": {
+        "label": "友達",
+        "desc": "支え合う日常のパートナー"
+      },
+      "lover": {
+        "label": "恋人",
+        "desc": "親密でロマンチックな関係"
+      },
+      "healer": {
+        "label": "癒やし",
+        "desc": "優しく聴き、慰める"
+      },
+      "study_buddy": {
+        "label": "学び仲間",
+        "desc": "一緒に集中し、成長する"
+      },
+      "listener": {
+        "label": "聞き手",
+        "desc": "静かにあなたの話を聴く"
+      },
+      "original": {
+        "label": "オリジナル",
+        "desc": "完全カスタム"
+      }
+    },
+    "personalities": {
+      "gentle": {
+        "label": "優しく頼もしい",
+        "desc": "温かく、辛抱強く、安心できる"
+      },
+      "energetic": {
+        "label": "元気いっぱい",
+        "desc": "明るく、情熱的で、活力に満ちている"
+      },
+      "calm": {
+        "label": "冷静・理性的",
+        "desc": "落ち着いて、客観的で、筋道が立っている"
+      },
+      "humorous": {
+        "label": "ユーモアのある毒舌",
+        "desc": "面白く、鋭いが、傷つけない"
+      },
+      "quiet_healing": {
+        "label": "静かな癒やし",
+        "desc": "優しく、ゆったりとした癒やし感"
+      }
+    },
+    "styles": {
+      "cinematic": {
+        "label": "シネマ風リアル"
+      },
+      "fresh_life": {
+        "label": "爽やかな日常"
+      },
+      "fashion_mag": {
+        "label": "ファッション誌"
+      },
+      "3d_anime": {
+        "label": "3D アニメ"
+      },
+      "anime": {
+        "label": "日本のイラスト"
+      },
+      "retro_film": {
+        "label": "レトロフィルム"
+      },
+      "ink_wash": {
+        "label": "水墨（和風）"
+      }
+    }
+  },
+  "memories": {
+    "title": "記憶センター",
+    "backToChat": "会話に戻る",
+    "filterAll": "すべて",
+    "filterCandidate": "未確認",
+    "filterConfirmed": "確認済み",
+    "empty": "まだ記憶がありません",
+    "emptyDesc": "キャラは会話で話された大切なことを覚えます",
+    "statusConfirmed": "確認済み",
+    "statusCandidate": "未確認",
+    "confirm": "確認",
+    "reject": "拒否",
+    "delete": "削除",
+    "footer": "キャラが使うのはあなたが確認した記憶だけです。いつでも編集・削除できます。"
+  },
+  "admin": {
+    "title": "管理画面",
+    "dashboard": "ダッシュボード",
+    "users": "ユーザー",
+    "safety": "安全",
+    "opsDashboard": "運用ダッシュボード",
+    "totalUsers": "ユーザー総数",
+    "totalCharacters": "キャラ総数",
+    "totalTasks": "タスク総数",
+    "pendingSafety": "未処理の安全イベント",
+    "userManagement": "ユーザー管理",
+    "colEmail": "メール",
+    "colRole": "権限",
+    "colAgeStatus": "年齢状態",
+    "colCredits": "ポイント",
+    "colRegistered": "登録日",
+    "safetyEvents": "安全イベント",
+    "colRiskType": "リスク種別",
+    "colSeverity": "重要度",
+    "colDisposition": "対応状況",
+    "colTime": "日時"
+  },
+  "billing": {
+    "title": "ウォレットと登録",
+    "currentCredits": "現在のポイント",
+    "plan": "プラン",
+    "freeTier": "無料体験",
+    "subscriptionTitle": "陪伴サブスクリプション",
+    "subscriptionDesc": "複数キャラ、より大きな記憶容量、月額画像枠",
+    "subscribe": "登録する",
+    "creditsPackTitle": "ポイントパック",
+    "creditsPackDesc": "画像・動画生成用の 100 ポイント",
+    "buyCredits": "ポイントを購入",
+    "ledgerTitle": "利用履歴",
+    "noRecords": "まだ履歴がありません",
+    "paymentFailed": "決済の開始に失敗しました"
+  },
+  "errors": {
+    "AUTH_TOKEN_MISSING": "認証トークンがありません",
+    "AUTH_TOKEN_INVALID": "トークンが無効または期限切れです",
+    "AUTH_TOKEN_PAYLOAD_INVALID": "トークンのペイロードが無効です",
+    "AUTH_USER_INVALID": "ユーザーが無効か存在しません",
+    "AUTH_EMAIL_TAKEN": "このメールは既に登録されています",
+    "AUTH_INVALID_CREDENTIALS": "メールまたはパスワードが違います",
+    "AUTH_ACCOUNT_DISABLED": "アカウントは無効化されました",
+    "AUTH_REFRESH_INVALID": "リフレッシュトークンが無効です",
+    "PERMISSION_ADMIN_REQUIRED": "管理者権限が必要です",
+    "PERMISSION_OPERATOR_REQUIRED": "運営権限が必要です",
+    "RESOURCE_CHARACTER_NOT_FOUND": "キャラが見つかりません",
+    "RESOURCE_MEMORY_NOT_FOUND": "記憶が見つかりません",
+    "RESOURCE_MESSAGE_NOT_FOUND": "メッセージが見つかりません",
+    "RESOURCE_TASK_NOT_FOUND": "タスクが見つかりません",
+    "RESOURCE_ASSET_NOT_FOUND": "素材が見つかりません",
+    "BILLING_INSUFFICIENT_CREDITS": "ポイントが不足しています",
+    "TASK_CANNOT_CANCEL": "このタスクはもうキャンセルできません",
+    "FEEDBACK_INVALID_TYPE": "無効なフィードバック種別です",
+    "BILLING_SUBSCRIPTION_NOT_FOUND": "サブスクリプションが見つかりません",
+    "BILLING_UNSUPPORTED_CHANNEL": "未対応の支払いチャネルです",
+    "BILLING_SIGNATURE_FAILED": "署名検証に失敗しました：{reason}",
+    "ASSET_BLOCKED": "この素材はブロックされました",
+    "unknown": "問題が発生しました"
+  }
+}

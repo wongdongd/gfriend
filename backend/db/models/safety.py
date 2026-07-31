@@ -74,7 +74,7 @@ class SafetyEvent(Base, UUIDPrimaryKey, TimestampMixin):
     )
 
     risk_type: Mapped[RiskType] = mapped_column(
-        Enum(RiskType, name="risk_type"),
+        Enum(RiskType, name="risk_type", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
     # 风险等级（low / medium / high / critical）
@@ -96,7 +96,7 @@ class SafetyEvent(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 处置
     disposition: Mapped[DispositionStatus] = mapped_column(
-        Enum(DispositionStatus, name="disposition_status"),
+        Enum(DispositionStatus, name="disposition_status", values_callable=lambda obj: [e.value for e in obj]),
         default=DispositionStatus.PENDING,
         nullable=False,
     )

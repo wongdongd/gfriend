@@ -4,12 +4,13 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
+from app.core.error_codes import AppError, ErrorCode
 from db.models.billing import CreditEntryType, CreditLedger, Order, OrderType, PaymentChannel
 from db.models.user import User
 from shared.database import get_db
@@ -83,7 +84,7 @@ async def create_portal(user: User = Depends(get_current_user), db: AsyncSession
     )
     order = result.scalar_one_or_none()
     if not order:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到订阅记录")
+        raise AppError(ErrorCode.BILLING_SUBSCRIPTION_NOT_FOUND)
 
     adapter = get_payment_adapter("stripe")
     url = await adapter.create_customer_portal(order.provider_payment_id or "", settings.app_url)
@@ -96,14 +97,14 @@ async def payment_webhook(provider: str, request: Request, db: AsyncSession = De
     from provider_adapters.payment import get_payment_adapter
 
     if provider != "stripe":
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="不支持的支付渠道")
+        raise AppError(ErrorCode.BILLING_UNSUPPORTED_CHANNEL)
     adapter = get_payment_adapter("stripe")
     payload = await request.body()
     headers = dict(request.headers)
     try:
         result = adapter.handle_webhook(payload, headers)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"验签失败: {e}")
+        raise AppError(ErrorCode.BILLING_SIGNATURE_FAILED, {"reason": str(e)})
 
     # 幂等检查：按 event_id 去重
     existing = await db.execute(select(Order).where(Order.provider_event_id == result.event_id))

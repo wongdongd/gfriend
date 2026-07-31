@@ -32,20 +32,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const res = await api.post<{ access_token: string; refresh_token: string; user_id: string }>(
-      '/auth/login',
-      { email, password },
-    );
+    const res = await api.post<{ access_token: string; refresh_token: string }>('/auth/login', {
+      email,
+      password,
+    });
     setTokens(res.access_token, res.refresh_token);
     const u = await api.get<User>('/auth/me');
     setUser(u);
   };
 
   const register = async (email: string, password: string) => {
-    const res = await api.post<{ access_token: string; refresh_token: string; user_id: string }>(
-      '/auth/register',
-      { email, password },
-    );
+    const res = await api.post<{ access_token: string; refresh_token: string }>('/auth/register', {
+      email,
+      password,
+    });
     setTokens(res.access_token, res.refresh_token);
     const u = await api.get<User>('/auth/me');
     setUser(u);

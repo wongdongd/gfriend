@@ -80,12 +80,12 @@ class Memory(Base, UUIDPrimaryKey, TimestampMixin):
     detail: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     type: Mapped[MemoryType] = mapped_column(
-        Enum(MemoryType, name="memory_type"),
+        Enum(MemoryType, name="memory_type", values_callable=lambda obj: [e.value for e in obj]),
         default=MemoryType.FACT,
         nullable=False,
     )
     status: Mapped[MemoryStatus] = mapped_column(
-        Enum(MemoryStatus, name="memory_status"),
+        Enum(MemoryStatus, name="memory_status", values_callable=lambda obj: [e.value for e in obj]),
         default=MemoryStatus.CANDIDATE,
         nullable=False,
     )

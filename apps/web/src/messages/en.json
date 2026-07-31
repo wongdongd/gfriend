@@ -1,0 +1,231 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "back": "Back",
+    "aiProductNotice": "This is an AI product. Characters are not real and have no consciousness."
+  },
+  "nav": {
+    "brand": "Companion",
+    "myCharacters": "My Characters",
+    "create": "Create Character",
+    "login": "Log in",
+    "getStarted": "Get Started",
+    "freeStart": "Start Free",
+    "continueChat": "Continue Chat"
+  },
+  "home": {
+    "heroTitle1": "Create your own",
+    "heroTitle2": "AI companion character",
+    "heroSubtitle": "Define a character's look, personality and relationship with quick templates. Text chat is the core — AI images and videos make your companion visible and present.",
+    "valueExclusiveTitle": "Yours alone",
+    "valueExclusiveDesc": "The character is shaped by you — name, personality, appearance and how you get along are all your choice.",
+    "valueCompanionshipTitle": "Companionship",
+    "valueCompanionshipDesc": "Your companion remembers what matters and responds with care in the right moment.",
+    "valueVisibleTitle": "Visible",
+    "valueVisibleDesc": "Selfies, scene images and dynamic greetings make the text relationship something you can see.",
+    "valueGrowthTitle": "Growth",
+    "valueGrowthDesc": "Shared experiences become memories, a keepsake album and an evolving relationship.",
+    "safetyTitle": "Transparency & Safety",
+    "safetyDesc": "All characters are AI and have no real consciousness. We protect your private conversations and images, and set boundaries for age, content and emotional safety. You can view, edit or delete a character's memories anytime.",
+    "footer": "© 2025 Companion · An AI product; characters do not imply real personal relationships."
+  },
+  "login": {
+    "welcomeBack": "Welcome back",
+    "createAccount": "Create account",
+    "loginSubtitle": "Log in to keep talking with your character",
+    "registerSubtitle": "Start creating your own AI companion",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "At least 6 characters",
+    "processing": "Processing...",
+    "submitLogin": "Log in",
+    "submitRegister": "Sign up",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "toggleRegister": "Sign up",
+    "toggleLogin": "Log in",
+    "aiNotice": "This is an AI product. Characters are not real and have no consciousness."
+  },
+  "chat": {
+    "myCharacters": "My Characters",
+    "noCharacters": "You haven't created any characters yet",
+    "createFirst": "Create your first character",
+    "clickToChat": "Click to start chatting",
+    "aiTag": "AI companion · not a real person",
+    "notReal": "Not a real person",
+    "inputPlaceholder": "Say something to {name}...",
+    "replying": "Replying...",
+    "send": "Send",
+    "createNew": "New character",
+    "errorPrefix": "[Error] "
+  },
+  "create": {
+    "chooseRelationship": "Choose your relationship",
+    "relationshipDesc": "This decides how the character interacts with you",
+    "choosePersonality": "Choose their personality",
+    "personalityDesc": "The archetype sets the default way of expressing and the interaction boundaries",
+    "chooseStyle": "Choose a visual style",
+    "styleDesc": "Images generated for the character will use this style",
+    "nameTitle": "Give them a name",
+    "nameDesc": "And how you'd like them to accompany you",
+    "nameLabel": "Name",
+    "namePlaceholder": "Name your character",
+    "preferenceLabel": "How you'd like them to accompany you",
+    "preferenceOptional": "(optional)",
+    "preferencePlaceholder": "e.g. Stay quietly with me when I'm down, celebrate with me when I'm happy",
+    "prev": "Previous",
+    "next": "Next",
+    "startAcquaintance": "Start acquaintance",
+    "creating": "Creating...",
+    "createFailed": "Failed to create",
+    "relationships": {
+      "friend": {
+        "label": "Friend",
+        "desc": "A daily partner who supports you"
+      },
+      "lover": {
+        "label": "Lover",
+        "desc": "An intimate, romantic relationship"
+      },
+      "healer": {
+        "label": "Healer",
+        "desc": "Gentle listening and comfort"
+      },
+      "study_buddy": {
+        "label": "Study buddy",
+        "desc": "Focus and grow together"
+      },
+      "listener": {
+        "label": "Listener",
+        "desc": "Quietly listens to you"
+      },
+      "original": {
+        "label": "Original",
+        "desc": "Fully custom"
+      }
+    },
+    "personalities": {
+      "gentle": {
+        "label": "Gentle & reliable",
+        "desc": "Warm, patient, reassuring"
+      },
+      "energetic": {
+        "label": "Energetic",
+        "desc": "Cheerful, passionate, full of life"
+      },
+      "calm": {
+        "label": "Calm & rational",
+        "desc": "Steady, objective, clear-minded"
+      },
+      "humorous": {
+        "label": "Witty & sharp",
+        "desc": "Fun, sharp but never hurtful"
+      },
+      "quiet_healing": {
+        "label": "Quiet & healing",
+        "desc": "Soft, slow-paced, soothing"
+      }
+    },
+    "styles": {
+      "cinematic": {
+        "label": "Cinematic realism"
+      },
+      "fresh_life": {
+        "label": "Fresh daily life"
+      },
+      "fashion_mag": {
+        "label": "Fashion magazine"
+      },
+      "3d_anime": {
+        "label": "3D animation"
+      },
+      "anime": {
+        "label": "Japanese illustration"
+      },
+      "retro_film": {
+        "label": "Retro film"
+      },
+      "ink_wash": {
+        "label": "Ink wash (traditional)"
+      }
+    }
+  },
+  "memories": {
+    "title": "Memory Center",
+    "backToChat": "Back to chat",
+    "filterAll": "All",
+    "filterCandidate": "Pending",
+    "filterConfirmed": "Confirmed",
+    "empty": "No memories yet",
+    "emptyDesc": "Your character remembers important things you mention in conversations",
+    "statusConfirmed": "Confirmed",
+    "statusCandidate": "Pending",
+    "confirm": "Confirm",
+    "reject": "Reject",
+    "delete": "Delete",
+    "footer": "Characters only use memories you've confirmed. You can edit or delete them anytime."
+  },
+  "admin": {
+    "title": "Admin",
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "safety": "Safety",
+    "opsDashboard": "Operations Dashboard",
+    "totalUsers": "Total users",
+    "totalCharacters": "Total characters",
+    "totalTasks": "Total tasks",
+    "pendingSafety": "Pending safety events",
+    "userManagement": "User Management",
+    "colEmail": "Email",
+    "colRole": "Role",
+    "colAgeStatus": "Age status",
+    "colCredits": "Credits",
+    "colRegistered": "Registered",
+    "safetyEvents": "Safety events",
+    "colRiskType": "Risk type",
+    "colSeverity": "Severity",
+    "colDisposition": "Disposition",
+    "colTime": "Time"
+  },
+  "billing": {
+    "title": "Wallet & Subscription",
+    "currentCredits": "Current credits",
+    "plan": "Plan",
+    "freeTier": "Free trial",
+    "subscriptionTitle": "Companion Subscription",
+    "subscriptionDesc": "Multiple characters, larger memory, monthly image allowance",
+    "subscribe": "Subscribe",
+    "creditsPackTitle": "Credit Pack",
+    "creditsPackDesc": "100 credits for image and video generation",
+    "buyCredits": "Buy credits",
+    "ledgerTitle": "Transaction history",
+    "noRecords": "No records yet",
+    "paymentFailed": "Failed to start payment"
+  },
+  "errors": {
+    "AUTH_TOKEN_MISSING": "Authentication token is missing",
+    "AUTH_TOKEN_INVALID": "Token is invalid or expired",
+    "AUTH_TOKEN_PAYLOAD_INVALID": "Token payload is invalid",
+    "AUTH_USER_INVALID": "User is invalid or disabled",
+    "AUTH_EMAIL_TAKEN": "This email is already registered",
+    "AUTH_INVALID_CREDENTIALS": "Incorrect email or password",
+    "AUTH_ACCOUNT_DISABLED": "This account has been disabled",
+    "AUTH_REFRESH_INVALID": "Refresh token is invalid",
+    "PERMISSION_ADMIN_REQUIRED": "Admin permission required",
+    "PERMISSION_OPERATOR_REQUIRED": "Operator permission required",
+    "RESOURCE_CHARACTER_NOT_FOUND": "Character not found",
+    "RESOURCE_MEMORY_NOT_FOUND": "Memory not found",
+    "RESOURCE_MESSAGE_NOT_FOUND": "Message not found",
+    "RESOURCE_TASK_NOT_FOUND": "Task not found",
+    "RESOURCE_ASSET_NOT_FOUND": "Asset not found",
+    "BILLING_INSUFFICIENT_CREDITS": "Insufficient credits",
+    "TASK_CANNOT_CANCEL": "This task can no longer be cancelled",
+    "FEEDBACK_INVALID_TYPE": "Invalid feedback type",
+    "BILLING_SUBSCRIPTION_NOT_FOUND": "Subscription not found",
+    "BILLING_UNSUPPORTED_CHANNEL": "Unsupported payment channel",
+    "BILLING_SIGNATURE_FAILED": "Payment signature verification failed: {reason}",
+    "ASSET_BLOCKED": "This asset has been blocked",
+    "unknown": "Something went wrong"
+  }
+}
