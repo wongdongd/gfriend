@@ -1,4 +1,4 @@
-"""Dummy LLM 适配器（本地开发与测试用，无需真实 API key）。"""
+﻿"""Dummy LLM 适配器（本地开发与测试用，无需真实 API key）。"""
 from __future__ import annotations
 
 from collections.abc import AsyncIterator

@@ -2,14 +2,14 @@
 set -e
 
 echo "=== 执行数据库迁移 ==="
-cd /app/backend && alembic upgrade head
+python main.py migrate
 
 echo "=== 启动 Celery Worker（后台） ==="
-cd /app/apps/worker && celery -A app.worker worker -Q image,video,safety,celery -l info &
+APP_ROLE=worker python main.py &
 WORKER_PID=$!
 
 echo "=== 启动 FastAPI ==="
-cd /app/apps/api && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} &
+APP_ROLE=api python main.py &
 API_PID=$!
 
 # 优雅退出：任一进程退出则终止全部

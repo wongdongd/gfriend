@@ -1,4 +1,4 @@
-"""数据库模型聚合导出。
+﻿"""数据库模型聚合导出。
 
 导入所有模型以便 Alembic autogenerate 与 SQLAlchemy registry 注册。
 """

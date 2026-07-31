@@ -1,4 +1,4 @@
-"""支付适配器工厂。"""
+﻿"""支付适配器工厂。"""
 from __future__ import annotations
 
 from provider_adapters.payment.base import (

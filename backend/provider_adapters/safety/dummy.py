@@ -1,4 +1,4 @@
-"""Dummy 安全审核适配器（本地开发用，基于关键词的简单规则）。"""
+﻿"""Dummy 安全审核适配器（本地开发用，基于关键词的简单规则）。"""
 from __future__ import annotations
 
 import re

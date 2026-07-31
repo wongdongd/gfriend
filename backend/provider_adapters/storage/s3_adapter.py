@@ -1,4 +1,4 @@
-"""S3 兼容对象存储适配器（基于 boto3，本地对接 MinIO）。"""
+﻿"""S3 兼容对象存储适配器（基于 boto3，本地对接 MinIO）。"""
 from __future__ import annotations
 
 from provider_adapters.storage.base import StorageAdapter

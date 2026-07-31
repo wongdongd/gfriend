@@ -1,4 +1,4 @@
-"""OpenAI LLM 适配器实现。
+﻿"""OpenAI LLM 适配器实现。
 
 基于 ``openai`` SDK，支持流式与非流式补全、文本嵌入。
 """

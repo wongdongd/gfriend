@@ -37,7 +37,7 @@ services:
   api:
     build:
       context: ..
-      dockerfile: infra/docker/api.Dockerfile
+      dockerfile: infra/docker/backend.Dockerfile
     restart: always
     environment:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-companion}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-companion}
@@ -69,10 +69,12 @@ services:
   # worker:
   #   build:
   #     context: ..
-  #     dockerfile: infra/docker/api.Dockerfile
+  #     dockerfile: infra/docker/backend.Dockerfile
   #   restart: always
-  #   entrypoint: ["celery", "-A", "app.worker", "worker", "-Q", "image,video,safety,celery", "-l", "info"]
-  #   working_dir: /app/apps/worker
+  #   entrypoint: ["python", "main.py", "worker"]
+  #   working_dir: /app
+  #   environment:
+  #     - CELERY_QUEENS=image,video,safety,celery
   #   environment:
   #     - DATABASE_URL=postgresql+asyncpg://${DB_USER:-companion}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-companion}
   #     - REDIS_URL=redis://redis:6379/0

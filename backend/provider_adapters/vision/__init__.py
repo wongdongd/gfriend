@@ -1,4 +1,4 @@
-"""视觉模型适配器工厂。"""
+﻿"""视觉模型适配器工厂。"""
 from __future__ import annotations
 
 from provider_adapters.vision.base import (

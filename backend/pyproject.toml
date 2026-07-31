@@ -1,45 +1,30 @@
-[build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.build_meta"
+# backend 项目配置（非可安装包，直接 python main.py 运行）
+# 依赖见 requirements.txt，工具配置见下方各 [tool.*] 段
 
-[project]
-name = "companion-backend"
-version = "0.1.0"
-description = "AI 人物陪伴平台 - Python 后端共享内核"
-requires-python = ">=3.11"
-dependencies = [
-  "fastapi>=0.115.0",
-  "uvicorn[standard]>=0.32.0",
-  "pydantic>=2.9.0",
-  "pydantic-settings>=2.6.0",
-  "sqlalchemy[asyncio]>=2.0.36",
-  "asyncpg>=0.30.0",
-  "alembic>=1.14.0",
-  "pgvector>=0.3.6",
-  "redis>=5.2.0",
-  "celery>=5.4.0",
-  "httpx>=0.28.0",
-  "python-jose[cryptography]>=3.3.0",
-  "passlib[bcrypt]>=1.7.4",
-  "python-multipart>=0.0.12",
-  "boto3>=1.35.0",
-  "stripe>=11.0.0",
-  "openai>=1.55.0",
-  "structlog>=24.4.0",
-  "tenacity>=9.0.0",
-  "pyyaml>=6.0",
-]
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["db/alembic/versions"]
 
-[project.optional-dependencies]
-dev = [
-  "ruff>=0.8.0",
-  "black>=24.10.0",
-  "mypy>=1.13.0",
-  "pytest>=8.3.0",
-  "pytest-asyncio>=0.24.0",
-  "httpx>=0.28.0",
-]
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "TCH"]
+ignore = ["E501"]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["companion_core*", "provider_adapters*", "db*", "shared*"]
+[tool.ruff.lint.isort]
+known-first-party = ["shared", "db", "companion_core", "provider_adapters", "api", "worker"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = "db/alembic/versions/"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

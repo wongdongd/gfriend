@@ -1,4 +1,4 @@
-"""LLM 适配器工厂。"""
+﻿"""LLM 适配器工厂。"""
 from __future__ import annotations
 
 from provider_adapters.llm.base import LLMAdapter, LLMRequest, LLMResponse, LLMUsage

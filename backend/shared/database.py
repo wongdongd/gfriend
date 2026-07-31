@@ -1,4 +1,4 @@
-"""数据库连接管理。
+﻿"""数据库连接管理。
 
 提供异步 engine 与 session factory；``get_db`` 作为 FastAPI 依赖注入。
 迁移使用同步 URL（见 ``db/alembic/env.py``）。

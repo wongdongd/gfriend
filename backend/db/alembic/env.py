@@ -1,4 +1,4 @@
-"""Alembic 环境配置。
+﻿"""Alembic 环境配置。
 
 使用同步 engine 执行迁移（与运行时的 async engine 分离）。
 自动从 ``db.models`` 导入所有模型以支持 autogenerate。
@@ -11,7 +11,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-# 确保 backend/ 在 sys.path 中
+# 确保 backend/（项目根）在 sys.path 中，使 shared/db 等成为顶层可导入包
 import sys
 from pathlib import Path
 

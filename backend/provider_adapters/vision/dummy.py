@@ -1,4 +1,4 @@
-"""Dummy 视觉适配器（本地开发用）。"""
+﻿"""Dummy 视觉适配器（本地开发用）。"""
 from __future__ import annotations
 
 import asyncio

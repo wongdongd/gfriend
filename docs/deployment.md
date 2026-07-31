@@ -13,11 +13,10 @@ AI 人物陪伴平台支持两种部署方式：
 
 ```
 Railway 平台
-├── Web 服务    (infra/docker/web.Dockerfile)    → 用户端 Next.js
-├── API 服务    (infra/docker/api.Dockerfile)    → FastAPI 后端
-├── API 服务    (infra/docker/api.Dockerfile)    → FastAPI + Celery Worker（同一容器）
-├── PostgreSQL  (Railway 插件)                   → 数据库 + pgvector
-└── Redis       (Railway 插件)                   → 缓存 + 队列
+├── Web 服务    (infra/docker/web.Dockerfile)       → 用户端 Next.js
+├── API 服务    (infra/docker/backend.Dockerfile)   → FastAPI + Celery Worker（同一容器）
+├── PostgreSQL  (Railway 插件)                       → 数据库 + pgvector
+└── Redis       (Railway 插件)                       → 缓存 + 队列
 
 外部服务（不在 Railway 上）：
 ├── LLM API      → OpenAI / DeepSeek / Ollama / vLLM（兼容 OpenAI 协议即可）
@@ -46,7 +45,7 @@ Railway 中点击 **+ New Service**，选择同一个 GitHub 仓库，为每个�
 
 | 服务 | Dockerfile 路径 | 端口 | 最小内存 |
 |---|---|---|---|
-| **api** | `infra/docker/api.Dockerfile` | 8000 | 512 MB |
+| **api** | `infra/docker/backend.Dockerfile` | 8000 | 512 MB |
 | **web** | `infra/docker/web.Dockerfile` | 3000 | 256 MB |
 
 > API 容器已内置 Celery Worker（通过 entrypoint.sh 同时启动），无需额外的 worker 服务。

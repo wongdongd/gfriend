@@ -1,4 +1,4 @@
-"""安全审核适配器工厂。"""
+﻿"""安全审核适配器工厂。"""
 from __future__ import annotations
 
 from provider_adapters.safety.base import (

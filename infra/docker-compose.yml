@@ -60,7 +60,7 @@ services:
   api:
     build:
       context: ..
-      dockerfile: infra/docker/api.Dockerfile
+      dockerfile: infra/docker/backend.Dockerfile
     container_name: companion-api
     restart: unless-stopped
     env_file:

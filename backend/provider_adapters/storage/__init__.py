@@ -1,4 +1,4 @@
-"""对象存储适配器工厂。"""
+﻿"""对象存储适配器工厂。"""
 from __future__ import annotations
 
 from provider_adapters.storage.base import StorageAdapter

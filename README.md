@@ -19,17 +19,21 @@
 ```text
 apps/
   web/                # Next.js 用户端 + 管理后台
-  api/                # FastAPI 主服务（uvicorn）
-  worker/             # Celery Worker
-backend/              # Python 共享内核（api 与 worker 共用）
+backend/              # Python 后端项目（直接 python main.py 启动，非可安装包）
+  main.py             # 统一入口：api / worker / migrate
+  shared/             # 配置、数据库会话、安全、依赖注入、通用工具
+  db/                 # SQLAlchemy models + Alembic 迁移
   companion_core/     # 上下文组装 / 记忆检索 / 安全编排
   provider_adapters/  # LLM / 视觉 / 支付 / 存储 适配器
-  db/                 # SQLAlchemy models + Alembic 迁移
-  shared/             # 配置、安全、依赖注入、通用工具
+  api/                # FastAPI 主服务（routers / core）
+  worker/             # Celery Worker（tasks / celery_app）
+  alembic.ini
+  pyproject.toml      # 工具配置（ruff/mypy/pytest），依赖见 requirements.txt
+  requirements.txt
 packages/
   shared/             # 前端共享 TypeScript 类型/常量
 infra/
-  docker/             # Dockerfile（api / worker / web）
+  docker/             # Dockerfile（backend / web）
   docker-compose.yml  # PostgreSQL + Redis + MinIO + 全栈
 docs/                 # 产品方案、实现方案与设计文档
 ```
@@ -52,20 +56,19 @@ docker compose -f infra/docker-compose.yml up -d postgres redis minio
 ### 2. 启动后端 API
 
 ```bash
-cd apps/api
-python -m venv .venv && source .venv/bin/activate
-pip install -e ../../backend -r requirements.txt
-alembic upgrade head           # 执行数据库迁移
-uvicorn app.main:app --reload --port 8000
+cd backend
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python main.py migrate           # 执行数据库迁移
+python main.py                   # 启动 API（默认），等价于 python main.py api
 ```
 
 ### 3. 启动 Worker
 
 ```bash
-cd apps/worker
-python -m venv .venv && source .venv/bin/activate
-pip install -e ../../backend -r requirements.txt
-celery -A app.worker worker -l info
+cd backend
+source .venv/bin/activate        # 激活上面的同一虚拟环境
+python main.py worker            # 启动 Celery Worker
 ```
 
 ### 4. 启动前端

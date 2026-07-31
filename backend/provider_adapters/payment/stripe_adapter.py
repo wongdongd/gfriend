@@ -1,4 +1,4 @@
-"""Stripe 支付适配器实现。
+﻿"""Stripe 支付适配器实现。
 
 对应实现方案第 8 节：国际市场首选 Stripe，使用 Stripe Checkout 与 Billing。
 订阅的创建、续费、取消、扣款失败和退款均以服务商签名 Webhook 为准。
