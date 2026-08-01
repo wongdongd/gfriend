@@ -7,7 +7,7 @@ RUN npm install -g pnpm@10
 COPY package.json pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
-RUN pnpm install --frozen-lockfile || pnpm install
+RUN pnpm install --frozen-lockfile
 
 FROM node:22-alpine AS builder
 WORKDIR /app
@@ -41,6 +41,10 @@ COPY --from=builder /app/packages/shared ./packages/shared
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+# 使用 node:22-alpine 内置的 node 用户（UID 1000）运行，避免以 root 运行
+RUN chown -R node:node /app
+USER node
 
 EXPOSE 3000
 # 使用 shell 形式以正确展开 Railway 注入的 PORT 环境变量

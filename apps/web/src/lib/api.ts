@@ -108,37 +108,85 @@ export const api = {
     request<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 
-  /** SSE 流式请求（聊天） */
-  stream: async (path: string, body: unknown, onToken: (t: string) => void): Promise<void> => {
-    const token = getToken();
-    const res = await fetch(`${API_BASE}${path}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(body),
-    });
+  /** SSE 流式请求（聊天）。
+   * 返回 done 事件携带的 data（含 message_id、safety 等），出错时抛 ApiError。
+   */
+  stream: async (
+    path: string,
+    body: unknown,
+    onToken: (t: string) => void,
+  ): Promise<Record<string, unknown>> => {
+    let token = getToken();
 
-    if (!res.ok || !res.body) throw new ApiError('UNKNOWN', `Request failed: ${res.status}`, res.status);
+    const doStream = async (): Promise<Record<string, unknown>> => {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      });
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+      // 401 时尝试刷新 token 后重试一次
+      if (res.status === 401 && !NO_REFRESH_PATHS.has(path)) {
+        const refreshed = await tryRefresh();
+        if (refreshed) {
+          token = getToken();
+          return doStream();
+        }
+        clearTokens();
+        if (typeof window !== 'undefined') window.location.href = '/';
+        throw new ApiError('AUTH_INVALID_CREDENTIALS', 'Authentication failed', 401);
+      }
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n\n');
-      buffer = lines.pop() || '';
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = JSON.parse(line.slice(6));
-          if (data.type === 'token') onToken(data.content);
+      if (!res.ok || !res.body) {
+        const errData = await res.json().catch(() => ({}));
+        throw new ApiError(
+          errData.code || 'UNKNOWN',
+          errData.message || `Request failed: ${res.status}`,
+          res.status,
+          errData.params || {},
+        );
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let doneData: Record<string, unknown> = {};
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === 'token') {
+              onToken(data.content);
+            } else if (data.type === 'done') {
+              doneData = data;
+            } else if (data.type === 'error') {
+              throw new ApiError(
+                'STREAM_ERROR',
+                data.message || 'Stream error',
+                500,
+              );
+            }
+          } catch (e) {
+            // JSON 解析失败时，如果已经是 ApiError 则向上抛出
+            if (e instanceof ApiError) throw e;
+            // 否则跳过这一行，继续处理后续数据
+          }
         }
       }
-    }
+      return doneData;
+    };
+
+    return doStream();
   },
 };
 

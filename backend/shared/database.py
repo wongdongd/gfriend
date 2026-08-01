@@ -27,7 +27,7 @@ def _normalize_async_url(url: str) -> str:
 # 异步 engine（运行时）
 engine = create_async_engine(
     _normalize_async_url(settings.database_url),
-    echo=settings.app_env == "development",
+    echo=False,  # 生产环境禁用 SQL 回显；调试时可在局部设置 echo=True
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,

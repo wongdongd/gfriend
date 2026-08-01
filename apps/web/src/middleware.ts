@@ -24,15 +24,24 @@ export default function middleware(req: NextRequest) {
       'http://localhost:8000';
     const target = new URL(pathname + req.nextUrl.search, apiBase);
 
+    // 转发必要的请求头，包括 Accept-Language（后端多语言危机响应依赖它）
+    const forwardHeaders = new Headers();
+    const passthrough = [
+      'content-type',
+      'authorization',
+      'accept-language',
+      'accept',
+      'user-agent',
+    ];
+    for (const key of passthrough) {
+      const val = req.headers.get(key);
+      if (val) forwardHeaders.set(key, val);
+    }
+
     // 直接 fetch 后端并返回响应（运行时代理）
     return fetch(target, {
       method: req.method,
-      headers: {
-        'Content-Type': req.headers.get('Content-Type') || 'application/json',
-        ...(req.headers.get('Authorization')
-          ? { Authorization: req.headers.get('Authorization')! }
-          : {}),
-      },
+      headers: forwardHeaders,
       body: ['GET', 'HEAD'].includes(req.method) ? undefined : req.body,
       // @ts-expect-error Next.js 需要 duplex 才能流式传 body
       duplex: 'half',

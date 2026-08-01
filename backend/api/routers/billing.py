@@ -1,6 +1,7 @@
 ﻿"""计费路由：套餐、订单、支付结账、Webhook、积分流水。"""
 from __future__ import annotations
 
+import asyncio
 import uuid
 from typing import Optional
 
@@ -11,7 +12,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.core.deps import get_current_user
 from api.core.error_codes import AppError, ErrorCode
-from db.models.billing import CreditEntryType, CreditLedger, Order, OrderType, PaymentChannel
+from db.models.billing import (
+    CreditEntryType,
+    CreditLedger,
+    Order,
+    OrderStatus,
+    OrderType,
+    PaymentChannel,
+    Subscription,
+)
 from db.models.user import User
 from shared.database import get_db
 
@@ -78,16 +87,20 @@ async def create_portal(user: User = Depends(get_current_user), db: AsyncSession
     from provider_adapters.payment import get_payment_adapter
     from shared.config import settings
 
-    # 查找用户的 stripe customer id
+    # 从 Subscription 表查找 Stripe Customer ID（而非 Order.provider_payment_id，
+    # 后者是 payment_intent ID，不能用于 customer portal）
     result = await db.execute(
-        select(Order).where(Order.user_id == user.id, Order.provider_payment_id.isnot(None)).order_by(Order.created_at.desc()).limit(1)
+        select(Subscription)
+        .where(Subscription.user_id == user.id, Subscription.provider_customer_id.isnot(None))
+        .order_by(Subscription.created_at.desc())
+        .limit(1)
     )
-    order = result.scalar_one_or_none()
-    if not order:
+    sub = result.scalar_one_or_none()
+    if not sub or not sub.provider_customer_id:
         raise AppError(ErrorCode.BILLING_SUBSCRIPTION_NOT_FOUND)
 
     adapter = get_payment_adapter("stripe")
-    url = await adapter.create_customer_portal(order.provider_payment_id or "", settings.app_url)
+    url = await adapter.create_customer_portal(sub.provider_customer_id, settings.app_url)
     return {"portal_url": url}
 
 
@@ -102,7 +115,9 @@ async def payment_webhook(provider: str, request: Request, db: AsyncSession = De
     payload = await request.body()
     headers = dict(request.headers)
     try:
-        result = adapter.handle_webhook(payload, headers)
+        # handle_webhook 是同步阻塞调用（stripe.Webhook.construct_event），
+        # 用 to_thread 避免阻塞事件循环
+        result = await asyncio.to_thread(adapter.handle_webhook, payload, headers)
     except Exception as e:
         raise AppError(ErrorCode.BILLING_SIGNATURE_FAILED, {"reason": str(e)})
 
@@ -114,14 +129,13 @@ async def payment_webhook(provider: str, request: Request, db: AsyncSession = De
     # 根据事件类型更新订单/订阅/积分
     if result.event_type == "checkout.session.completed":
         user_id = uuid.UUID(result.user_id) if result.user_id else None
-        if user_id:
-            # 查找订单并更新
+        if user_id and result.order_id:
+            # 查找订单并更新（仅当 checkout_id 匹配时）
             order_result = await db.execute(
-                select(Order).where(Order.provider_checkout_id == result.order_id or "")
+                select(Order).where(Order.provider_checkout_id == result.order_id)
             )
             order = order_result.scalar_one_or_none()
             if order:
-                from db.models.billing import OrderStatus
                 order.status = OrderStatus.PAID
                 order.provider_payment_id = result.payment_id
                 order.provider_event_id = result.event_id

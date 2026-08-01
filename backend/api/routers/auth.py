@@ -4,7 +4,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, status
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,13 +25,13 @@ router = APIRouter()
 
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str
-    display_name: str | None = None
+    password: str = Field(..., min_length=8, max_length=128)
+    display_name: str | None = Field(None, max_length=64)
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=1, max_length=128)
 
 
 class TokenResponse(BaseModel):

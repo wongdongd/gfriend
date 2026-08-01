@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     jwt_access_expire_minutes: int = 60
     jwt_refresh_expire_days: int = 30
 
+    # ---------- CORS ----------
+    cors_origins: str = ""  # 逗号分隔的允许来源
+
     # ---------- 数据库 ----------
     database_url: str = "postgresql+asyncpg://companion:companion@localhost:5432/companion"
     database_sync_url: str = "postgresql://companion:companion@localhost:5432/companion"
@@ -117,9 +120,22 @@ class Settings(BaseSettings):
         return self.app_env == "development"
 
 
+_INSECURE_SECRET_KEY = "change-me-to-a-long-random-string"
+
+
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    s = Settings()
+    # 非开发环境强制校验 SECRET_KEY，防止使用公开默认值被伪造 token
+    if s.app_env != "development" and (
+        not s.secret_key or s.secret_key == _INSECURE_SECRET_KEY or len(s.secret_key) < 32
+    ):
+        raise RuntimeError(
+            "SECRET_KEY must be set to a secure random string (>=32 chars) "
+            "in non-development environments. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+        )
+    return s
 
 
 # 全局单例

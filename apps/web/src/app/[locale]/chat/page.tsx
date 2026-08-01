@@ -80,11 +80,27 @@ export default function ChatPage() {
     setStreamText('');
 
     try {
-      await api.stream(`/conversations/${current.id}/messages`, { content }, (token) =>
-        setStreamText((prev) => prev + token),
+      let accumulated = '';
+      const doneData = await api.stream(
+        `/conversations/${current.id}/messages`,
+        { content },
+        (token) => {
+          accumulated += token;
+          setStreamText(accumulated);
+        },
       );
-      const res = await api.get<{ messages: Message[] }>(`/conversations/${current.id}/messages`);
-      setMessages(res.messages);
+      // 使用后端返回的 message_id 作为最终消息 ID，本地拼接避免重新拉取全部消息
+      const messageId = (doneData.message_id as string) || `msg-${Date.now()}`;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: messageId,
+          role: 'assistant',
+          content: accumulated,
+          feedback: 'none',
+          created_at: new Date().toISOString(),
+        },
+      ]);
     } catch (err) {
       setMessages((prev) => [
         ...prev,

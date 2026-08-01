@@ -41,13 +41,15 @@ async def retrieve_memories(
         query_vec = embeddings[0]
     except Exception:
         # 嵌入失败时回退为简单匹配
+        # 转义 SQL LIKE 通配符，防止用户输入中的 % 和 _ 影响匹配
+        escaped_query = query_text[:50].replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         stmt = (
             select(Memory)
             .where(
                 Memory.user_id == user_id,
                 Memory.character_id == character_id,
                 Memory.status == MemoryStatus.CONFIRMED,
-                Memory.content.ilike(f"%{query_text[:50]}%"),
+                Memory.content.ilike(f"%{escaped_query}%", escape="\\"),
             )
             .limit(top_k)
         )

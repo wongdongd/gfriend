@@ -25,5 +25,9 @@ ENV PORT=8000
 COPY infra/docker/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
+# 创建非 root 用户并切换，减少容器逃逸风险
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
 CMD ["/app/entrypoint.sh"]
 EXPOSE 8000

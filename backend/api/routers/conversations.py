@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from typing import Optional
 
@@ -21,15 +22,18 @@ from companion_core.context import assemble_context
 from companion_core.memory_retrieval import retrieve_memories
 from companion_core.safety_guard import (
     check_input_safety,
+    check_output_safety,
     get_crisis_response,
     should_trigger_crisis_response,
 )
 from db.models.character import Character, CharacterStatus
-from db.models.conversation import Conversation, Message, MessageRole
+from db.models.conversation import Conversation, Message, MessageFeedback, MessageRole
 from db.models.user import User
 from provider_adapters.llm import get_llm_adapter
 from provider_adapters.safety import get_safety_adapter
-from shared.database import get_db
+from shared.database import async_session_factory, get_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -191,44 +195,47 @@ async def send_message(
             # 输出安全检查
             output_check = await check_output_safety(safety_adapter, full_text)
 
-            # 保存角色消息
-            assistant_msg = Message(
-                conversation_id=conversation.id,
-                role=MessageRole.ASSISTANT,
-                content=full_text,
-                model_id=llm.provider_name,
-                policy_version="v1",
-            )
-            db.add(assistant_msg)
-            await db.commit()
+            # 使用独立 session 保存角色消息，避免 StreamingResponse 在请求
+            # 返回后才执行导致原 session 已被 get_db 关闭的问题。
+            async with async_session_factory() as save_session:
+                assistant_msg = Message(
+                    conversation_id=conversation.id,
+                    role=MessageRole.ASSISTANT,
+                    content=full_text,
+                    model_id=llm.provider_name,
+                    policy_version="v1",
+                )
+                save_session.add(assistant_msg)
+                await save_session.commit()
+                msg_id = str(assistant_msg.id)
 
-            yield f"data: {json.dumps({'type': 'done', 'message_id': str(assistant_msg.id), 'safety': output_check.verdict.value})}\n\n"
-        except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'message_id': msg_id, 'safety': output_check.verdict.value})}\n\n"
+        except Exception:
+            logger.exception("SSE generation failed")
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Internal error occurred'})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+class FeedbackRequest(BaseModel):
+    feedback: MessageFeedback
+    note: Optional[str] = None
 
 
 @router.post("/{character_id}/messages/{message_id}/feedback")
 async def feedback_message(
     character_id: uuid.UUID,
     message_id: uuid.UUID,
-    feedback: str,
-    note: Optional[str] = None,
+    req: FeedbackRequest,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """对角色回复进行喜欢/不喜欢/调整语气反馈。"""
-    from db.models.conversation import MessageFeedback
-
     result = await db.execute(select(Message).join(Conversation, Message.conversation_id == Conversation.id).where(Message.id == message_id, Conversation.user_id == user.id))
     message = result.scalar_one_or_none()
     if not message:
         raise AppError(ErrorCode.RESOURCE_MESSAGE_NOT_FOUND)
-    try:
-        message.feedback = MessageFeedback(feedback)
-    except ValueError:
-        raise AppError(ErrorCode.FEEDBACK_INVALID_TYPE)
-    message.feedback_note = note
+    message.feedback = req.feedback
+    message.feedback_note = req.note
     await db.commit()
     return {"ok": True}
