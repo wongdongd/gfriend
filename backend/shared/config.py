@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -39,6 +40,24 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     celery_broker_url: str = "redis://localhost:6379/1"
     celery_result_backend: str = "redis://localhost:6379/2"
+
+    # Railway 插件只注入 REDIS_URL，这里提供派生属性让 Celery 复用该连接串。
+    @property
+    def celery_broker(self) -> str:
+        # 若显式设置了 CELERY_BROKER_URL 则直接使用；否则基于 REDIS_URL 生成
+        broker = self.celery_broker_url
+        if os.getenv("CELERY_BROKER_URL"):
+            return broker
+        base = self.redis_url.rstrip("/")
+        return base + "/1"
+
+    @property
+    def celery_backend(self) -> str:
+        backend = self.celery_result_backend
+        if os.getenv("CELERY_RESULT_BACKEND"):
+            return backend
+        base = self.redis_url.rstrip("/")
+        return base + "/2"
 
     # ---------- 对象存储 ----------
     s3_endpoint: str = "http://localhost:9000"

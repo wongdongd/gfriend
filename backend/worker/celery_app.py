@@ -13,8 +13,8 @@ from shared.config import settings
 
 app = Celery(
     "companion",
-    broker=settings.celery_broker_url,
-    backend=settings.celery_result_backend,
+    broker=settings.celery_broker,
+    backend=settings.celery_backend,
 )
 
 app.conf.update(
