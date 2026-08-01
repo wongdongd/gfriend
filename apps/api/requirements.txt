@@ -1,5 +1,0 @@
-# FastAPI API 服务依赖
-# 安装时需先安装 backend 内核：pip install -e ../../backend
--r ../../backend/requirements.txt
-
-# API 服务本身无额外依赖（均已在 backend 中声明）
