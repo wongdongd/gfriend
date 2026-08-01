@@ -3,10 +3,10 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN npm install -g pnpm@10
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 FROM node:22-alpine AS builder
 WORKDIR /app
