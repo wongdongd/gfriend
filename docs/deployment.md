@@ -93,7 +93,11 @@ IMAGE_PROVIDER=dummy         # 或 replicate
 IMAGE_API_KEY=
 
 # === 前端（web 服务需要） ===
-NEXT_PUBLIC_API_URL=<Railway API 服务的公开 URL>
+# API_URL: Web 服务在运行时把 /api/* 代理到后端。Railway 上必须设置，
+# 否则回退到 localhost:8000（Web 容器内部）会报 ECONNREFUSED。
+# Railway 同项目服务间用内部地址访问，例如：
+#   API_URL=http://api.railway.internal:8080     （或使用 API 服务的 RAILWAY_INTERNAL_URL）
+NEXT_PUBLIC_API_URL=<Railway API 服务的公开 URL>   # 仅浏览器端需要时使用，代理默认走 API_URL
 ```
 
 #### 6. 首次部署
