@@ -19,9 +19,10 @@ COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-# 构建时注入 API URL（Railway 会在运行时通过环境变量注入）
+# 构建时注入公开 API URL（浏览器端可见）
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# API_URL 在运行时由 middleware 读取，无需 build 时注入
 RUN pnpm --filter @companion/web build
 
 FROM node:22-alpine AS runner
