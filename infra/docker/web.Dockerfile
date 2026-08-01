@@ -3,16 +3,20 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN npm install -g pnpm@10
-COPY package.json ./
+# workspace 配置必须一并复制，否则 pnpm 不识别 monorepo，依赖不会装到各子包
+COPY package.json pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
-RUN pnpm install
+RUN pnpm install --frozen-lockfile || pnpm install
 
 FROM node:22-alpine AS builder
 WORKDIR /app
 RUN npm install -g pnpm@10
+# pnpm hoisting：依赖主要在根 node_modules，子包 node_modules 多为符号链接，
+# 必须连同根 node_modules 一起复制才能保留符号链接结构
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # 构建时注入 API URL（Railway 会在运行时通过环境变量注入）
@@ -30,10 +34,12 @@ COPY --from=builder /app/apps/web/.next ./apps/web/.next
 COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder /app/apps/web/package.json ./apps/web/package.json
 COPY --from=builder /app/apps/web/next.config.js ./apps/web/next.config.js
-# pnpm workspace：apps/web/node_modules 是指向根 .pnpm 的符号链接目录，必须一并复制，否则 next 找不到
+# pnpm workspace：apps/web/node_modules 是指向根 .pnpm 的符号链接目录，必须连同根 node_modules 一并复制
 COPY --from=builder /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=builder /app/packages/shared ./packages/shared
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
 EXPOSE 3000
 # 使用 shell 形式以正确展开 Railway 注入的 PORT 环境变量
