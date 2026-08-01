@@ -54,36 +54,48 @@ async def retrieve_memories(
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
-    # 使用 pgvector 余弦距离检索
+    # 使用 pgvector 余弦距离检索。
+    # 关键：pgvector 查询一旦在事务中失败，整个事务即被 PostgreSQL 标记为 aborted，
+    # 后续任何 SQL 都会报 "current transaction is aborted"。因此把 pgvector 尝试放到
+    # 嵌套事务（savepoint）里，失败时仅回滚该 savepoint，再执行回退查询，避免污染外层事务。
     try:
         from pgvector.sqlalchemy import Vector
-
-        stmt = (
-            select(Memory, Memory.embedding.cosine_distance(query_vec).label("distance"))
-            .where(
-                Memory.user_id == user_id,
-                Memory.character_id == character_id,
-                Memory.status == MemoryStatus.CONFIRMED,
-                Memory.embedding.isnot(None),
-            )
-            .order_by("distance")
-            .limit(top_k)
-        )
-        result = await db.execute(stmt)
-        return [row[0] for row in result.all()]
     except Exception:
-        # pgvector 不可用时回退
-        stmt = (
-            select(Memory)
-            .where(
-                Memory.user_id == user_id,
-                Memory.character_id == character_id,
-                Memory.status == MemoryStatus.CONFIRMED,
-            )
-            .limit(top_k)
+        Vector = None  # noqa: N806 - 类名导入变量
+
+    if Vector is not None:
+        try:
+            # 失败时异常会穿过 async with，自动回滚 savepoint，外层事务保持可用。
+            async with db.begin_nested():
+                stmt = (
+                    select(Memory, Memory.embedding.cosine_distance(query_vec).label("distance"))
+                    .where(
+                        Memory.user_id == user_id,
+                        Memory.character_id == character_id,
+                        Memory.status == MemoryStatus.CONFIRMED,
+                        Memory.embedding.isnot(None),
+                    )
+                    .order_by("distance")
+                    .limit(top_k)
+                )
+                result = await db.execute(stmt)
+                return [row[0] for row in result.all()]
+        except Exception:
+            # savepoint 已回滚，外层事务未受影响，随后执行回退查询。
+            pass
+
+    # pgvector 不可用或查询失败时回退为简单匹配
+    stmt = (
+        select(Memory)
+        .where(
+            Memory.user_id == user_id,
+            Memory.character_id == character_id,
+            Memory.status == MemoryStatus.CONFIRMED,
         )
-        result = await db.execute(stmt)
-        return list(result.scalars().all())
+        .limit(top_k)
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
 
 
 async def extract_memory_candidates(
