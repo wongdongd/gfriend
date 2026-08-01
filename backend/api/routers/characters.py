@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, status
@@ -37,14 +38,14 @@ class CharacterUpdate(BaseModel):
 
 
 class CharacterOut(BaseModel):
-    id: str
+    id: uuid.UUID
     name: str
     companion_preference: Optional[str]
     relationship_template_code: Optional[str]
     personality_template_code: Optional[str]
     visual_style_code: Optional[str]
     status: str
-    created_at: str
+    created_at: datetime
 
     class Config:
         from_attributes = True
