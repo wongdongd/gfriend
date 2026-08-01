@@ -21,6 +21,7 @@ from api.core.error_codes import AppError, ErrorCode
 from db.models.character import Character, CharacterStatus
 from db.models.generation import GenerationTask, OutboxEvent, TaskStatus, TaskType
 from db.models.user import User
+from shared.config import settings
 from shared.database import get_db
 
 router = APIRouter()
@@ -99,15 +100,29 @@ async def create_task(req: CreateTaskRequest, user: User = Depends(get_current_u
 
 @router.get("/{task_id}")
 async def get_task(task_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    """查看生成任务状态。"""
+    """查看生成任务状态。成功后返回结果签名访问 URL。"""
+    from db.models.asset import Asset
+
     result = await db.execute(select(GenerationTask).where(GenerationTask.id == task_id, GenerationTask.user_id == user.id))
     task = result.scalar_one_or_none()
     if not task:
         raise AppError(ErrorCode.RESOURCE_TASK_NOT_FOUND)
+
+    url: Optional[str] = None
+    if task.status == TaskStatus.SUCCESS and task.result_asset_id:
+        asset_res = await db.execute(select(Asset).where(Asset.id == task.result_asset_id, Asset.owner_id == user.id))
+        asset = asset_res.scalar_one_or_none()
+        if asset and asset.object_key:
+            from provider_adapters.storage import get_storage
+
+            storage = get_storage()
+            url = await storage.presigned_get_url(asset.object_key, settings.s3_presign_expires)
+
     return {
         "id": str(task.id),
         "type": task.type.value,
         "status": task.status.value,
+        "url": url,
         "credits_cost": task.credits_cost,
         "error_message": task.error_message,
         "created_at": task.created_at.isoformat(),

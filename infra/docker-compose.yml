@@ -64,7 +64,7 @@ services:
     container_name: companion-api
     restart: unless-stopped
     env_file:
-      - ../.env
+      - ../backend/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://companion:companion@postgres:5432/companion
       DATABASE_SYNC_URL: postgresql://companion:companion@postgres:5432/companion

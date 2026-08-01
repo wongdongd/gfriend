@@ -8,14 +8,21 @@
 """
 from __future__ import annotations
 
+import logging
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from shared.config import settings
 
-from api.core.error_handlers import app_error_handler, validation_error_handler
+from api.core.error_handlers import (
+    app_error_handler,
+    unhandled_exception_handler,
+    validation_error_handler,
+)
 from api.core.error_codes import AppError
 from api.routers import (
     admin,
@@ -51,6 +58,8 @@ app = FastAPI(
 # 统一错误处理：业务异常 → {code, message, params}
 app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
+# 兜底：所有未捕获异常 → 500 + 统一 JSON，并记录完整堆栈
+app.add_exception_handler(Exception, unhandled_exception_handler)
 
 # CORS：开发环境允许 localhost 直连；生产环境通过 CORS_ORIGINS 环境变量配置前端域名
 _default_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
@@ -69,6 +78,80 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 请求日志中间件：记录每个请求的方法、路径、查询参数、客户端 IP、耗时、状态码
+request_logger = logging.getLogger("api.request")
+
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    """把请求详情打到后台日志：方法、路径、查询、客户端 IP、耗时、状态码。"""
+
+    async def dispatch(self, request: Request, call_next):
+        # 跳过 /health 这类探活请求，避免日志噪声
+        if request.url.path == "/health":
+            return await call_next(request)
+
+        start = time.perf_counter()
+        client_ip = request.client.host if request.client else "-"
+        query = request.url.query
+        path_q = f"{request.url.path}?{query}" if query else request.url.path
+
+        # 读取请求体（仅对有 body 的方法做），读取后再塞回以便下游正常消费
+        body_bytes = await request.body()
+
+        async def receive():
+            return {"type": "http.request", "body": body_bytes, "more_body": False}
+
+        request = Request(request.scope, receive)
+
+        try:
+            response = await call_next(request)
+        except Exception:
+            elapsed_ms = (time.perf_counter() - start) * 1000
+            request_logger.exception(
+                "%s %s from %s | body=%s | FAILED after %.1fms",
+                request.method,
+                path_q,
+                client_ip,
+                self._safe_body(body_bytes),
+                elapsed_ms,
+            )
+            raise
+
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        # 5xx 记 ERROR，4xx 记 WARNING，其余 INFO
+        log_level = (
+            logging.ERROR
+            if response.status_code >= 500
+            else logging.WARNING if response.status_code >= 400 else logging.INFO
+        )
+        request_logger.log(
+            log_level,
+            "%s %s from %s → %d in %.1fms | body=%s",
+            request.method,
+            path_q,
+            client_ip,
+            response.status_code,
+            elapsed_ms,
+            self._safe_body(body_bytes),
+        )
+        return response
+
+    @staticmethod
+    def _safe_body(body_bytes: bytes) -> str:
+        """安全展示请求体：空返回 '-'，非文本返回 '<binary %d bytes>'，过长截断。"""
+        if not body_bytes:
+            return "-"
+        try:
+            text = body_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            return f"<binary {len(body_bytes)} bytes>"
+        if len(text) > 1000:
+            text = text[:1000] + f"...<truncated {len(text) - 1000} chars>"
+        return text
+
+
+app.add_middleware(RequestLoggingMiddleware)
 
 # 注册路由
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])

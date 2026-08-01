@@ -5,40 +5,43 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api, translateError } from '@/lib/api';
+import Navbar from '@/components/Navbar';
 
 const RELATIONSHIPS = [
-  { code: 'friend', icon: '🤝' },
-  { code: 'lover', icon: '💕' },
-  { code: 'healer', icon: '🌙' },
-  { code: 'study_buddy', icon: '📚' },
-  { code: 'listener', icon: '👂' },
-  { code: 'original', icon: '✨' },
+  { code: 'friend', icon: '◈', color: '#a78bfa' },
+  { code: 'lover', icon: '◉', color: '#f43f5e' },
+  { code: 'healer', icon: '◌', color: '#34d399' },
+  { code: 'study_buddy', icon: '⬡', color: '#06b6d4' },
+  { code: 'listener', icon: '★', color: '#818cf8' },
+  { code: 'original', icon: '✦', color: '#f59e0b' },
 ];
 
 const PERSONALITIES = [
-  { code: 'gentle', icon: '🌿' },
-  { code: 'energetic', icon: '⚡' },
-  { code: 'calm', icon: '🧊' },
-  { code: 'humorous', icon: '😏' },
-  { code: 'quiet_healing', icon: '🍃' },
+  { code: 'gentle', icon: '◈', color: '#34d399' },
+  { code: 'energetic', icon: '◉', color: '#f59e0b' },
+  { code: 'calm', icon: '⬡', color: '#06b6d4' },
+  { code: 'humorous', icon: '◌', color: '#a78bfa' },
+  { code: 'quiet_healing', icon: '✦', color: '#818cf8' },
 ];
 
 const STYLES = [
-  { code: 'cinematic' },
-  { code: 'fresh_life' },
-  { code: 'fashion_mag' },
-  { code: '3d_anime' },
-  { code: 'anime' },
-  { code: 'retro_film' },
-  { code: 'ink_wash' },
+  { code: 'cinematic', icon: '◈' },
+  { code: 'fresh_life', icon: '◉' },
+  { code: 'fashion_mag', icon: '⬡' },
+  { code: '3d_anime', icon: '◌' },
+  { code: 'anime', icon: '✦' },
+  { code: 'retro_film', icon: '★' },
+  { code: 'ink_wash', icon: '◆' },
 ];
+
+const STEP_KEYS = ['stepRelationship', 'stepPersonality', 'stepStyle', 'stepIdentity'];
 
 export default function CreatePage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const t = useTranslations();
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [relationship, setRelationship] = useState('');
   const [personality, setPersonality] = useState('');
   const [style, setStyle] = useState('');
@@ -51,10 +54,10 @@ export default function CreatePage() {
   }, [user, loading, router]);
 
   const canNext = () => {
-    if (step === 1) return !!relationship;
-    if (step === 2) return !!personality;
-    if (step === 3) return !!style;
-    return step === 4 && name.trim().length > 0;
+    if (step === 0) return !!relationship;
+    if (step === 1) return !!personality;
+    if (step === 2) return !!style;
+    return step === 3 && name.trim().length > 0;
   };
 
   const create = async () => {
@@ -77,7 +80,7 @@ export default function CreatePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-400">
+      <div className="mesh-bg flex min-h-screen items-center justify-center text-foreground/40">
         {t('common.loading')}
       </div>
     );
@@ -86,101 +89,177 @@ export default function CreatePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="mx-auto max-w-[1280px] px-6 pb-16 pt-32">
+        {/* 头部 */}
+        <div className="mb-9 flex items-center justify-between">
+          <div>
+            <p className="m-0 mb-1.5 font-mono text-[11px] uppercase tracking-[0.15em] text-accent">
+              {t('create.workshopEyebrow')}
+            </p>
+            <h1 className="font-display m-0 text-3xl font-bold text-foreground">
+              {t('create.createTitle')}
+            </h1>
+          </div>
+          <button
+            onClick={() => router.push('/chat')}
+            className="rounded-lg border border-white/10 px-4 py-2 text-[13px] text-foreground/40 transition hover:border-primary/30 hover:text-foreground"
+          >
+            {t('nav.backToDashboard')}
+          </button>
+        </div>
+
         {/* 步骤指示器 */}
-        <div className="flex items-center justify-between mb-8">
-          {[1, 2, 3, 4].map((s) => (
-            <div key={s} className="flex items-center flex-1">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step >= s ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-400'
+        <div className="mb-10 flex items-center">
+          {STEP_KEYS.map((sk, i) => (
+            <div key={sk} className={`flex items-center ${i < STEP_KEYS.length - 1 ? 'flex-1' : ''}`}>
+              <button
+                onClick={() => i <= step && setStep(i)}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition ${
+                  i < step
+                    ? 'bg-primary text-white'
+                    : i === step
+                      ? 'bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] text-white'
+                      : 'border border-white/10 bg-white/5 text-foreground/30'
+                } ${i <= step ? 'cursor-pointer' : 'cursor-default'}`}
+              >
+                {i < step ? '✓' : i + 1}
+              </button>
+              <span
+                className={`mx-2 text-xs font-semibold ${
+                  i <= step ? 'text-foreground' : 'text-foreground/30'
                 }`}
               >
-                {s}
-              </div>
-              {s < 4 && (
-                <div className={`flex-1 h-0.5 mx-2 ${step > s ? 'bg-brand-600' : 'bg-gray-200'}`} />
+                {t(`create.${sk}`)}
+              </span>
+              {i < STEP_KEYS.length - 1 && (
+                <div
+                  className={`mx-4 h-px flex-1 ${
+                    i < step ? 'bg-primary' : 'bg-white/[0.07]'
+                  }`}
+                />
               )}
             </div>
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          {/* 第 1 步：关系 */}
-          {step === 1 && (
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">{t('create.chooseRelationship')}</h2>
-              <p className="text-sm text-gray-500 mb-6">{t('create.relationshipDesc')}</p>
-              <div className="grid grid-cols-2 gap-3">
+        {/* 主内容卡 */}
+        <div className="rounded-2xl border border-white/[0.07] bg-card p-9">
+          {/* 步骤 0：关系 */}
+          {step === 0 && (
+            <div className="animate-fade-in-up">
+              <h2 className="m-0 mb-1.5 text-xl font-semibold text-foreground">
+                {t('create.chooseRelationship')}
+              </h2>
+              <p className="m-0 mb-7 text-[13px] text-foreground/45">
+                {t('create.relationshipDesc')}
+              </p>
+              <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3">
                 {RELATIONSHIPS.map((r) => (
                   <button
                     key={r.code}
                     onClick={() => setRelationship(r.code)}
-                    className={`text-left p-4 rounded-xl border-2 transition ${
+                    className={`flex flex-col items-center gap-2 rounded-xl border p-5 transition ${
                       relationship === r.code
-                        ? 'border-brand-600 bg-brand-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? ''
+                        : 'border-white/[0.08] bg-white/[0.03] hover:border-white/15'
                     }`}
+                    style={
+                      relationship === r.code
+                        ? {
+                            background: `${r.color}18`,
+                            borderColor: `${r.color}60`,
+                          }
+                        : {}
+                    }
                   >
-                    <div className="text-2xl mb-1">{r.icon}</div>
-                    <div className="font-medium text-gray-900">
+                    <span
+                      className="text-3xl"
+                      style={{ color: relationship === r.code ? r.color : 'rgba(240,237,232,0.3)' }}
+                    >
+                      {r.icon}
+                    </span>
+                    <span className="text-[13px] font-semibold text-foreground">
                       {t(`create.relationships.${r.code}.label`)}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-0.5">
+                    </span>
+                    <span className="text-center text-xs text-foreground/50">
                       {t(`create.relationships.${r.code}.desc`)}
-                    </div>
+                    </span>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* 第 2 步：性格 */}
-          {step === 2 && (
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">{t('create.choosePersonality')}</h2>
-              <p className="text-sm text-gray-500 mb-6">{t('create.personalityDesc')}</p>
-              <div className="space-y-2">
+          {/* 步骤 1：性格 */}
+          {step === 1 && (
+            <div className="animate-fade-in-up">
+              <h2 className="m-0 mb-1.5 text-xl font-semibold text-foreground">
+                {t('create.choosePersonality')}
+              </h2>
+              <p className="m-0 mb-7 text-[13px] text-foreground/45">
+                {t('create.personalityDesc')}
+              </p>
+              <div className="flex flex-col gap-2.5">
                 {PERSONALITIES.map((p) => (
                   <button
                     key={p.code}
                     onClick={() => setPersonality(p.code)}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition ${
+                    className={`flex items-center gap-3.5 rounded-xl border p-4 text-left transition ${
                       personality === p.code
-                        ? 'border-brand-600 bg-brand-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? ''
+                        : 'border-white/[0.08] bg-white/[0.03] hover:border-white/15'
                     }`}
+                    style={
+                      personality === p.code
+                        ? {
+                            background: `${p.color}18`,
+                            borderColor: `${p.color}50`,
+                          }
+                        : {}
+                    }
                   >
-                    <div className="font-medium text-gray-900">
-                      {p.icon} {t(`create.personalities.${p.code}.label`)}
+                    <span className="text-2xl" style={{ color: p.color }}>
+                      {p.icon}
+                    </span>
+                    <div>
+                      <p className="m-0 font-semibold text-foreground">
+                        {t(`create.personalities.${p.code}.label`)}
+                      </p>
+                      <p className="m-0 mt-0.5 text-sm text-foreground/50">
+                        {t(`create.personalities.${p.code}.desc`)}
+                      </p>
                     </div>
-                    <div className="text-sm text-gray-500 mt-0.5">
-                      {t(`create.personalities.${p.code}.desc`)}
-                    </div>
+                    {personality === p.code && (
+                      <span className="ml-auto text-xl text-[#a78bfa]">✓</span>
+                    )}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* 第 3 步：风格 */}
-          {step === 3 && (
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">{t('create.chooseStyle')}</h2>
-              <p className="text-sm text-gray-500 mb-6">{t('create.styleDesc')}</p>
-              <div className="grid grid-cols-2 gap-3">
+          {/* 步骤 2：风格 */}
+          {step === 2 && (
+            <div className="animate-fade-in-up">
+              <h2 className="m-0 mb-1.5 text-xl font-semibold text-foreground">
+                {t('create.chooseStyle')}
+              </h2>
+              <p className="m-0 mb-7 text-[13px] text-foreground/45">{t('create.styleDesc')}</p>
+              <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3">
                 {STYLES.map((s) => (
                   <button
                     key={s.code}
                     onClick={() => setStyle(s.code)}
-                    className={`p-4 rounded-xl border-2 transition text-center ${
+                    className={`rounded-xl border p-4 text-center transition ${
                       style === s.code
-                        ? 'border-brand-600 bg-brand-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-primary/50 bg-primary/[0.12]'
+                        : 'border-white/[0.08] bg-white/[0.03] hover:border-white/15'
                     }`}
                   >
-                    <div className="font-medium text-gray-900 text-sm">
+                    <div className="mb-1 text-2xl text-[#a78bfa]">{s.icon}</div>
+                    <div className="text-sm font-medium text-foreground">
                       {t(`create.styles.${s.code}.label`)}
                     </div>
                   </button>
@@ -189,67 +268,77 @@ export default function CreatePage() {
             </div>
           )}
 
-          {/* 第 4 步：名字 */}
-          {step === 4 && (
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">{t('create.nameTitle')}</h2>
-              <p className="text-sm text-gray-500 mb-6">{t('create.nameDesc')}</p>
-              <div className="space-y-4">
+          {/* 步骤 3：身份 */}
+          {step === 3 && (
+            <div className="animate-fade-in-up">
+              <h2 className="m-0 mb-1.5 text-xl font-semibold text-foreground">
+                {t('create.nameTitle')}
+              </h2>
+              <p className="m-0 mb-7 text-[13px] text-foreground/45">{t('create.nameDesc')}</p>
+              <div className="flex flex-col gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('create.nameLabel')}
+                  <label className="mb-2 block font-mono text-xs tracking-[0.08em] text-foreground/50">
+                    {t('create.nameLabel').toUpperCase()}
                   </label>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     maxLength={64}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                     placeholder={t('create.namePlaceholder')}
+                    className="w-full rounded-lg border border-white/10 bg-[#1a1b22] px-4 py-2.5 text-[15px] text-foreground outline-none transition focus:border-primary/60"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('create.preferenceLabel')}{' '}
-                    <span className="text-gray-400">{t('create.preferenceOptional')}</span>
+                  <label className="mb-2 block font-mono text-xs tracking-[0.08em] text-foreground/50">
+                    {t('create.preferenceLabel').toUpperCase()}{' '}
+                    <span className="text-foreground/30">{t('create.preferenceOptional')}</span>
                   </label>
                   <textarea
                     value={preference}
                     onChange={(e) => setPreference(e.target.value)}
                     rows={3}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none resize-none"
                     placeholder={t('create.preferencePlaceholder')}
+                    className="w-full resize-none rounded-lg border border-white/10 bg-[#1a1b22] px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary/60"
                   />
                 </div>
               </div>
             </div>
           )}
+        </div>
 
-          {/* 底部按钮 */}
-          <div className="flex justify-between mt-8">
+        {/* 底部导航按钮 */}
+        <div className="mt-6 flex items-center justify-between">
+          <button
+            onClick={() => (step > 0 ? setStep(step - 1) : router.push('/chat'))}
+            className="rounded-lg border border-white/10 px-5 py-2.5 text-[13px] text-foreground/50 transition hover:border-primary/30 hover:text-foreground"
+          >
+            {step === 0 ? t('create.cancel') : t('create.back')}
+          </button>
+
+          {step < 3 ? (
             <button
-              onClick={() => (step > 1 ? setStep(step - 1) : router.back())}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900"
+              onClick={() => canNext() && setStep(step + 1)}
+              disabled={!canNext()}
+              className="rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] px-6 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {step > 1 ? t('create.prev') : t('common.back')}
+              {t('create.continue')}
             </button>
-            {step < 4 ? (
-              <button
-                onClick={() => setStep(step + 1)}
-                disabled={!canNext()}
-                className="rounded-full bg-brand-600 px-8 py-2 text-white font-medium hover:bg-brand-700 disabled:opacity-50"
-              >
-                {t('create.next')}
-              </button>
-            ) : (
-              <button
-                onClick={create}
-                disabled={!canNext() || creating}
-                className="rounded-full bg-brand-600 px-8 py-2 text-white font-medium hover:bg-brand-700 disabled:opacity-50"
-              >
-                {creating ? t('create.creating') : t('create.startAcquaintance')}
-              </button>
-            )}
-          </div>
+          ) : (
+            <button
+              onClick={create}
+              disabled={!canNext() || creating}
+              className="flex items-center gap-2 rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] px-6 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
+            >
+              {creating ? (
+                <>
+                  <span className="spin inline-block h-4 w-4 rounded-full border-2 border-white/30 border-t-white" />
+                  {t('create.creating')}
+                </>
+              ) : (
+                t('create.createButton')
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

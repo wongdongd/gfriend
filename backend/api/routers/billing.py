@@ -49,7 +49,12 @@ async def create_checkout(req: CheckoutRequest, user: User = Depends(get_current
     from provider_adapters.payment import get_payment_adapter
     from shared.config import settings
 
-    adapter = get_payment_adapter("stripe")
+    # Stripe 适配器初始化可能因未配置密钥而失败，提前拦截
+    try:
+        adapter = get_payment_adapter("stripe")
+    except ValueError as e:
+        raise AppError(ErrorCode.BILLING_UNSUPPORTED_CHANNEL, {"reason": str(e)})
+
     from provider_adapters.payment.base import CheckoutRequest as ProviderCheckoutRequest
 
     # 创建本地订单
@@ -74,7 +79,11 @@ async def create_checkout(req: CheckoutRequest, user: User = Depends(get_current
         cancel_url=req.cancel_url or settings.stripe_cancel_url,
         metadata={"order_id": str(order.id)},
     )
-    result = await adapter.create_checkout(checkout_req)
+    try:
+        result = await adapter.create_checkout(checkout_req)
+    except Exception as e:
+        await db.rollback()
+        raise AppError(ErrorCode.UNKNOWN, {"reason": str(e)})
     order.provider_checkout_id = result.checkout_id
     await db.commit()
 

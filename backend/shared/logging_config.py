@@ -70,15 +70,33 @@ def _try_make_file_handler(log_dir: Path) -> TimedRotatingFileHandler | None:
 
 
 def _gzip_rotate(source: str, dest: str) -> None:
-    """滚动时把旧日志文件压缩成 .gz。"""
+    """滚动时把旧日志文件压缩成 .gz。
+
+    Windows 下文件可能仍被 handler 持有句柄，os.remove 会报 WinError 32，
+    此时跳过删除（.gz 已生成，残留的 source 会在下次滚动或进程退出时清理）。
+    """
     import gzip
     import shutil
+    import time
 
-    if os.path.exists(dest):
-        os.remove(dest)
-    with open(source, "rb") as f_in, gzip.open(dest + ".gz", "wb") as f_out:
-        shutil.copyfileobj(f_in, f_out)
-    os.remove(source)
+    gz_path = dest if dest.endswith(".gz") else dest + ".gz"
+    if os.path.exists(gz_path):
+        try:
+            os.remove(gz_path)
+        except OSError:
+            pass
+    try:
+        with open(source, "rb") as f_in, gzip.open(gz_path, "wb") as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    except OSError:
+        return
+    # Windows 下 source 可能仍被占用，重试几次再放弃
+    for _ in range(5):
+        try:
+            os.remove(source)
+            return
+        except PermissionError:
+            time.sleep(0.1)
 
 
 def _log_dir() -> Path:
@@ -126,3 +144,11 @@ def setup_logging() -> None:
             root.info("日志已初始化 -> 仅控制台输出（文件不可写）")
 
     _LOG_CONFIGURED = True
+
+    # Uvicorn 的 logger 默认 propagate=False，需要显式添加相同的 handler
+    for uv_name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
+        uv_logger = logging.getLogger(uv_name)
+        uv_logger.setLevel(level)
+        for h in root.handlers:
+            if h not in uv_logger.handlers:
+                uv_logger.addHandler(h)

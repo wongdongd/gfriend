@@ -183,4 +183,4 @@ certbot --nginx -d your-domain.com
 | vLLM（自托管） | `http://<gpu-ip>:8000/v1` | `meta-llama/Llama-3.1-8B` |
 | Groq | `https://api.groq.com/openai/v1` | `llama-3.1-70b-versatile` |
 
-只需修改 `.env` 中的 `LLM_PROVIDER`、`LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY` 四个变量，不需要改代码。
+只需修改 `../backend/.env` 中的 `LLM_PROVIDER`、`LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY` 四个变量，不需要改代码。

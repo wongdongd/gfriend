@@ -10,7 +10,7 @@ import logging
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -31,6 +31,7 @@ from db.models.conversation import Conversation, Message, MessageFeedback, Messa
 from db.models.user import User
 from provider_adapters.llm import get_llm_adapter
 from provider_adapters.safety import get_safety_adapter
+from shared.config import settings
 from shared.database import async_session_factory, get_db
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ def pick_locale(accept_language: str) -> str:
 class SendMessageRequest(BaseModel):
     content: str
     conversation_id: Optional[str] = None
+    attachment_ids: Optional[list[str]] = None
 
 
 class MessageOut(BaseModel):
@@ -62,6 +64,7 @@ class MessageOut(BaseModel):
     content: str
     feedback: str
     created_at: str
+    attachments: Optional[list[str]] = None
 
 
 async def _get_character(db: AsyncSession, character_id: uuid.UUID, user: User) -> Character:
@@ -97,7 +100,7 @@ async def list_messages(
     return {
         "conversation_id": str(conversation.id),
         "messages": [
-            {"id": str(m.id), "role": m.role.value, "content": m.content, "feedback": m.feedback.value, "created_at": m.created_at.isoformat()}
+            {"id": str(m.id), "role": m.role.value, "content": m.content, "feedback": m.feedback.value, "created_at": m.created_at.isoformat(), "attachments": getattr(m, "attachments", None)}
             for m in messages
         ],
     }
@@ -133,7 +136,12 @@ async def send_message(
         await db.flush()
 
     # 保存用户消息
-    user_msg = Message(conversation_id=conversation.id, role=MessageRole.USER, content=req.content)
+    user_msg = Message(
+        conversation_id=conversation.id,
+        role=MessageRole.USER,
+        content=req.content,
+        attachments=req.attachment_ids or None,
+    )
     db.add(user_msg)
     await db.flush()
 
@@ -155,7 +163,7 @@ async def send_message(
 
         async def crisis_stream():
             yield f"data: {json.dumps({'type': 'token', 'content': crisis_text})}\n\n"
-            yield f"data: {json.dumps({'type': 'done', 'message_id': str(assistant_msg.id), 'crisis': True})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'message_id': str(assistant_msg.id), 'crisis': True, 'attachments': []})}\n\n"
 
         return StreamingResponse(crisis_stream(), media_type="text/event-stream")
 
@@ -176,12 +184,37 @@ async def send_message(
         confirmed_memories=memory_texts,
     )
 
+    # 解析附件：将 attachment_ids 转为 presigned URL，组装多模态 content
+    user_content: str | list[dict] = req.content
+    if req.attachment_ids:
+        from db.models.asset import Asset
+        from provider_adapters.storage import get_storage
+
+        asset_ids = [uuid.UUID(aid) for aid in req.attachment_ids]
+        asset_result = await db.execute(
+            select(Asset).where(Asset.id.in_(asset_ids), Asset.owner_id == user.id)
+        )
+        assets = asset_result.scalars().all()
+        if assets:
+            storage = get_storage()
+            image_parts: list[dict] = []
+            for asset in assets:
+                if not asset.object_key:
+                    continue
+                try:
+                    img_url = await storage.presigned_get_url(asset.object_key, settings.s3_presign_expires)
+                    image_parts.append({"type": "image_url", "image_url": {"url": img_url}})
+                except Exception:
+                    logger.warning("Failed to generate presigned URL for asset %s", asset.id)
+            if image_parts:
+                user_content = [{"type": "text", "text": req.content}] + image_parts
+
     # 调用 LLM
     from provider_adapters.llm.base import LLMMessage, LLMRequest
 
     llm = get_llm_adapter()
     llm_request = LLMRequest(
-        messages=[LLMMessage(role="system", content=context.system_prompt)] + [LLMMessage(role=m["role"], content=m["content"]) for m in context.messages] + [LLMMessage(role="user", content=req.content)],
+        messages=[LLMMessage(role="system", content=context.system_prompt)] + [LLMMessage(role=m["role"], content=m["content"]) for m in context.messages] + [LLMMessage(role="user", content=user_content)],
         temperature=0.8,
     )
 
@@ -209,7 +242,7 @@ async def send_message(
                 await save_session.commit()
                 msg_id = str(assistant_msg.id)
 
-            yield f"data: {json.dumps({'type': 'done', 'message_id': msg_id, 'safety': output_check.verdict.value})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'message_id': msg_id, 'safety': output_check.verdict.value, 'attachments': []})}\n\n"
         except Exception:
             logger.exception("SSE generation failed")
             yield f"data: {json.dumps({'type': 'error', 'message': 'Internal error occurred'})}\n\n"

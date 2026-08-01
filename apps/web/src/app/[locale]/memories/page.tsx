@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import Navbar from '@/components/Navbar';
 
 interface Memory {
   id: string;
@@ -52,34 +53,43 @@ export default function MemoriesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-400">
+      <div className="mesh-bg flex min-h-screen items-center justify-center text-foreground/40">
         {t('common.loading')}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">{t('memories.title')}</h1>
-          <button onClick={() => router.push('/chat')} className="text-sm text-brand-600 hover:text-brand-700">
-            {t('memories.backToChat')}
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="mx-auto max-w-4xl px-6 pb-16 pt-32">
+        <div className="mb-7 flex items-center justify-between">
+          <div>
+            <p className="m-0 mb-1.5 font-mono text-[11px] uppercase tracking-[0.15em] text-accent">
+              Character Memory
+            </p>
+            <h1 className="font-display m-0 text-3xl font-bold text-foreground">
+              {t('memories.title')}
+            </h1>
+          </div>
+          <button
+            onClick={() => router.push('/chat')}
+            className="rounded-lg border border-white/10 px-4 py-2 text-[13px] text-foreground/40 transition hover:border-primary/30 hover:text-foreground"
+          >
+            ← Back to Chat
           </button>
         </div>
-      </header>
 
-      <div className="max-w-4xl mx-auto px-4 py-6">
         {/* 过滤器 */}
-        <div className="flex gap-2 mb-6">
+        <div className="mb-6 flex gap-2">
           {FILTERS.map((f) => (
             <button
               key={f.v}
               onClick={() => setFilter(f.v)}
-              className={`px-3 py-1 rounded-full text-sm ${
+              className={`rounded-full px-3.5 py-1.5 text-sm transition ${
                 filter === f.v
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-white border border-gray-200 text-gray-600'
+                  ? 'bg-primary text-white'
+                  : 'border border-white/10 bg-white/5 text-foreground/60 hover:border-primary/30 hover:text-foreground'
               }`}
             >
               {t(f.lk)}
@@ -88,23 +98,40 @@ export default function MemoriesPage() {
         </div>
 
         {items.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <p>{t('memories.empty')}</p>
-            <p className="text-sm mt-1">{t('memories.emptyDesc')}</p>
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#a78bfa"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 2v6m0 8v6M2 12h6m8 0h6" />
+              </svg>
+            </div>
+            <p className="mt-3 text-foreground/50">{t('memories.empty')}</p>
+            <p className="mt-1 text-sm text-foreground/30">{t('memories.emptyDesc')}</p>
           </div>
         ) : (
           <div className="space-y-3">
             {items.map((m) => (
-              <div key={m.id} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-                <p className="text-gray-900">{m.content}</p>
+              <div
+                key={m.id}
+                className="card-hover rounded-xl border border-white/[0.07] bg-card p-4"
+              >
+                <p className="text-sm leading-relaxed text-foreground/80">{m.content}</p>
                 <div className="mt-3 flex items-center justify-between">
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${
+                    className={`rounded-full px-2.5 py-0.5 text-xs ${
                       m.status === 'confirmed'
-                        ? 'bg-green-100 text-green-700'
+                        ? 'bg-[#34d399]/15 text-[#34d399]'
                         : m.status === 'candidate'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-gray-100 text-gray-500'
+                          ? 'bg-amber-500/15 text-amber-400'
+                          : 'bg-white/5 text-foreground/40'
                     }`}
                   >
                     {m.status === 'confirmed'
@@ -118,13 +145,13 @@ export default function MemoriesPage() {
                       <>
                         <button
                           onClick={() => act(m.id, 'confirmed')}
-                          className="text-xs text-green-600 hover:text-green-700"
+                          className="text-xs text-[#34d399] transition hover:text-[#6ee7b7]"
                         >
                           {t('memories.confirm')}
                         </button>
                         <button
                           onClick={() => act(m.id, 'rejected')}
-                          className="text-xs text-gray-400 hover:text-gray-600"
+                          className="text-xs text-foreground/40 transition hover:text-foreground/60"
                         >
                           {t('memories.reject')}
                         </button>
@@ -132,7 +159,7 @@ export default function MemoriesPage() {
                     )}
                     <button
                       onClick={() => act(m.id, 'delete')}
-                      className="text-xs text-red-400 hover:text-red-600"
+                      className="text-xs text-red-400 transition hover:text-red-300"
                     >
                       {t('memories.delete')}
                     </button>
@@ -143,7 +170,7 @@ export default function MemoriesPage() {
           </div>
         )}
 
-        <p className="mt-8 text-center text-xs text-gray-400">{t('memories.footer')}</p>
+        <p className="mt-8 text-center text-xs text-foreground/30">{t('memories.footer')}</p>
       </div>
     </div>
   );

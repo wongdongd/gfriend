@@ -15,6 +15,10 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).resolve().parent / ".env")  # 始终加载 backend/.env，不依赖启动目录
 
 
 def run_api() -> None:

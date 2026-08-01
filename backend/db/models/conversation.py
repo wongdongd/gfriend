@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -92,6 +92,9 @@ class Message(Base, UUIDPrimaryKey, TimestampMixin):
         nullable=False,
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # 附件（图片/视频 URL 列表，JSON 存储）
+    attachments: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     # ===== 快照字段（用于审计与成本追踪） =====
     model_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)

@@ -108,6 +108,50 @@ export const api = {
     request<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 
+  /** 上传图片/视频到对象存储（直存）。返回 { asset_id, url }。 */
+  uploadImage: async (file: File, kind: 'image' | 'video' = 'image'): Promise<{ asset_id: string; url: string }> => {
+    // 1. 获取上传预签名 URL
+    const res = await request<{ upload_url: string; object_key: string; expires_in: number }>(
+      '/assets/upload-url',
+      { method: 'POST', body: JSON.stringify({ filename: file.name, content_type: file.type }) },
+    );
+    const { upload_url, object_key } = res;
+    // 2. 直传文件到对象存储
+    await fetch(upload_url, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    });
+    // 3. 确认上传，创建 Asset 记录
+    const confirm = await request<{ id: string; object_key: string }>('/assets/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ object_key, content_type: file.type, size_bytes: file.size }),
+    });
+    // 4. 获取签名访问 URL（用于前端展示 + 后端传给 LLM 时也会重新生成）
+    const signed = await request<{ url: string; expires_in: number }>(`/assets/${confirm.id}/url`);
+    return { asset_id: confirm.id, url: signed.url };
+  },
+
+  /** 创建生成任务（图片/视频），返回 task_id。 */
+  createGeneration: (kind: 'image' | 'video', prompt: string, characterId: string) =>
+    request<{ task_id: string }>('/generation-tasks', {
+      method: 'POST',
+      body: JSON.stringify({
+        character_id: characterId,
+        type: kind,
+        caption: prompt,
+        conversation_id: undefined,
+      }),
+    }),
+
+  /** 轮询生成任务状态。 */
+  getGeneration: (taskId: string) =>
+    request<{ status: string; url?: string; progress?: number }>(`/generation-tasks/${taskId}`),
+
+  /** 发送消息（可带图片/视频附件）。 */
+  sendMessage: (characterId: string, content: string, attachmentIds: string[]) =>
+    api.post('/conversations/' + characterId + '/messages', { content, attachment_ids: attachmentIds }),
+
   /** SSE 流式请求（聊天）。
    * 返回 done 事件携带的 data（含 message_id、safety 等），出错时抛 ApiError。
    */
@@ -197,8 +241,25 @@ export function translateError(
 ): string {
   if (err instanceof ApiError) {
     const key = `errors.${err.code}`;
-    const msg = t(key, err.params as Record<string, string | number | Date>);
-    return msg && msg !== key ? msg : err.message || t('errors.unknown');
+    try {
+      const msg = t(key, err.params as Record<string, string | number | Date>);
+      if (msg && msg !== key) return msg;
+    } catch {
+      // next-intl 在 key 不存在时抛 MISSING_MESSAGE，忽略后走 fallback
+    }
+    return err.message || safeT(t, 'errors.UNKNOWN');
   }
-  return err instanceof Error ? err.message : t('errors.unknown');
+  return err instanceof Error ? err.message : safeT(t, 'errors.UNKNOWN');
+}
+
+/** 安全调用 t()，key 不存在时返回兜底文案而不是抛异常 */
+function safeT(
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
+  key: string,
+): string {
+  try {
+    return t(key);
+  } catch {
+    return 'Something went wrong';
+  }
 }

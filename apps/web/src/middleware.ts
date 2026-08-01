@@ -13,7 +13,7 @@ const intlMiddleware = createIntlMiddleware(routing);
  * 注意：Next.js 的 next.config.js rewrites 在 build 时固化结果，
  * 运行时改环境变量无效。改用 middleware 才能运行时动态读 API_URL。
  */
-export default function middleware(req: NextRequest) {
+export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // API 代理：把 /api/* 转发到后端
@@ -23,6 +23,9 @@ export default function middleware(req: NextRequest) {
       process.env.RAILWAY_INTERNAL_URL ||
       'http://localhost:8000';
     const target = new URL(pathname + req.nextUrl.search, apiBase);
+
+    // 调试日志：打印实际转发的后端地址（方便排查连接问题）
+    console.log(`[api-proxy] ${req.method} ${pathname} → ${target.href}`);
 
     // 转发必要的请求头，包括 Accept-Language（后端多语言危机响应依赖它）
     const forwardHeaders = new Headers();
@@ -38,14 +41,50 @@ export default function middleware(req: NextRequest) {
       if (val) forwardHeaders.set(key, val);
     }
 
+    // 读取请求体（GET/HEAD 无 body）
+    let body: BodyInit | undefined = undefined;
+    if (!['GET', 'HEAD'].includes(req.method)) {
+      try {
+        body = await req.text();
+      } catch {
+        // 读取 body 失败时传 undefined
+      }
+    }
+
     // 直接 fetch 后端并返回响应（运行时代理）
-    return fetch(target, {
-      method: req.method,
-      headers: forwardHeaders,
-      body: ['GET', 'HEAD'].includes(req.method) ? undefined : req.body,
-      // @ts-expect-error Next.js 需要 duplex 才能流式传 body
-      duplex: 'half',
-    });
+    try {
+      const upstream = await fetch(target, {
+        method: req.method,
+        headers: forwardHeaders,
+        body,
+      });
+      // 透传后端响应（状态码、头、体）
+      const respHeaders = new Headers();
+      upstream.headers.forEach((v, k) => {
+        // 跳过 transfer-encoding，避免 Next.js 重复压缩
+        if (k.toLowerCase() !== 'transfer-encoding') respHeaders.set(k, v);
+      });
+      const respBody = await upstream.text();
+      console.log(
+        `[api-proxy] ← ${upstream.status} ${upstream.statusText} (${respBody.length} bytes)`,
+      );
+      return new NextResponse(respBody, {
+        status: upstream.status,
+        statusText: upstream.statusText,
+        headers: respHeaders,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[api-proxy] fetch failed: ${msg}`);
+      return NextResponse.json(
+        {
+          error: 'BAD_GATEWAY',
+          message: `API proxy error: ${msg}`,
+          detail: `Could not reach backend at ${target.origin}`,
+        },
+        { status: 502 },
+      );
+    }
   }
 
   // 非 API 请求交给 next-intl

@@ -12,10 +12,14 @@ from dataclasses import dataclass, field
 
 @dataclass
 class LLMMessage:
-    """对话消息（适配器中性表示）。"""
+    """对话消息（适配器中性表示）。
+
+    ``content`` 可以是纯文本字符串，也可以是 OpenAI 多模态格式的内容列表：
+    ``[{"type": "text", "text": "..."}, {"type": "image_url", "image_url": {"url": "..."}}]``
+    """
 
     role: str  # "system" | "user" | "assistant"
-    content: str
+    content: str | list[dict]
 
 
 @dataclass
