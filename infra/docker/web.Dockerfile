@@ -3,8 +3,8 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN npm install -g pnpm@10
-# workspace 配置必须一并复制，否则 pnpm 不识别 monorepo，依赖不会装到各子包
-COPY package.json pnpm-workspace.yaml ./
+# workspace 配置 + lockfile 必须一并复制，否则 pnpm 不识别 monorepo 且 --frozen-lockfile 会失败
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
 RUN pnpm install --frozen-lockfile
