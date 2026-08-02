@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { useAuth } from '@/lib/auth-context';
@@ -30,6 +30,8 @@ export default function CharactersPage() {
   const [loading2, setLoading2] = useState(true);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // 同步守卫：state 更新是异步的，防止快速重复点击/旧页面快照并发提交
+  const busyRef = useRef(false);
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
@@ -58,6 +60,8 @@ export default function CharactersPage() {
   };
 
   const removeCharacter = async (id: string) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusyId(id);
     try {
       await api.delete(`/characters/${id}`);
@@ -66,6 +70,7 @@ export default function CharactersPage() {
     } catch (err) {
       alert(translateError(t, err));
     } finally {
+      busyRef.current = false;
       setBusyId(null);
     }
   };
@@ -177,7 +182,7 @@ export default function CharactersPage() {
                         </button>
                         <button
                           onClick={() => removeCharacter(c.id)}
-                          disabled={busyId === c.id}
+                          disabled={busyId !== null}
                           className="flex-1 rounded-md bg-red-500/80 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-500 disabled:opacity-40"
                         >
                           {busyId === c.id ? t('common.loading') : t('characters.confirmDelete')}
@@ -193,7 +198,8 @@ export default function CharactersPage() {
                         </button>
                         <button
                           onClick={() => setConfirmingId(c.id)}
-                          className="rounded-md border border-white/10 px-3 py-2 text-xs text-foreground/50 transition hover:border-red-400/40 hover:text-red-400"
+                          disabled={busyId !== null}
+                          className="rounded-md border border-white/10 px-3 py-2 text-xs text-foreground/50 transition hover:border-red-400/40 hover:text-red-400 disabled:opacity-40"
                           title={t('characters.delete')}
                         >
                           ✕
