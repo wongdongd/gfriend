@@ -1,4 +1,4 @@
-﻿"""S3 兼容对象存储适配器（基于 boto3，本地对接 MinIO）。
+﻿"""S3 兼容对象存储适配器（基于 boto3，本地对接 MinIO，线上对接 R2）。
 
 所有方法均为真正的异步实现：boto3 同步调用通过 ``asyncio.to_thread``
 包装到线程池执行，不会阻塞 FastAPI 事件循环。
@@ -6,12 +6,15 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from provider_adapters.storage.base import StorageAdapter
 
+logger = logging.getLogger(__name__)
+
 
 class S3StorageAdapter(StorageAdapter):
-    """S3 兼容适配器，支持 AWS S3、MinIO 等。"""
+    """S3 兼容适配器，支持 AWS S3、MinIO、Cloudflare R2 等。"""
 
     def __init__(
         self,
@@ -34,12 +37,17 @@ class S3StorageAdapter(StorageAdapter):
             config=Config(s3={"addressing_style": "path" if use_path_style else "auto"}),
         )
         self._bucket = bucket
-        self._loop = asyncio.get_running_loop()
-        # 确保 bucket 存在
+        # 只探测 bucket 是否存在，不做强制创建。
+        # R2 / 托管 S3 的 bucket 都是预创建的，AccessKey 通常没有 CreateBucket 权限；
+        # 若 head 失败仅警告，避免初始化整个适配器崩溃。
         try:
             self._s3.head_bucket(Bucket=bucket)
-        except Exception:
-            self._s3.create_bucket(Bucket=bucket)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "Bucket %r 不存在或不可访问: %s。请确认 bucket 已创建且 AccessKey 有权限。",
+                bucket,
+                e,
+            )
 
     @property
     def provider_name(self) -> str:
