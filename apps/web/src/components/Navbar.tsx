@@ -53,6 +53,9 @@ export default function Navbar() {
         <div className="hidden items-center gap-1 md:flex">
           {user ? (
             <>
+              <Link href="/characters" className={navLinkClass('/characters')}>
+                {t('nav.myCharacters')}
+              </Link>
               <Link href="/chat" className={navLinkClass('/chat')}>
                 {t('nav.chat')}
               </Link>

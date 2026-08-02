@@ -145,21 +145,40 @@ export const api = {
     return { asset_id: confirm.id, url: signed.url };
   },
 
-  /** 创建生成任务（图片/视频），返回 task_id。 */
-  createGeneration: (kind: 'image' | 'video', prompt: string, characterId: string) =>
-    request<{ task_id: string }>('/generation-tasks', {
-      method: 'POST',
-      body: JSON.stringify({
-        character_id: characterId,
-        type: kind,
-        caption: prompt,
-        conversation_id: undefined,
-      }),
-    }),
+  /** 创建生成任务（图片/视频），返回 task_id。
+   *  caption 为用户补充的情境描述，可选；不传时后端用角色自带的视觉提示词生成。 */
+  createGeneration: (
+    kind: 'image' | 'video',
+    characterId: string,
+    caption?: string,
+    styleTemplateCode?: string,
+  ) =>
+    request<{ task_id: string; status: string; credits_cost: number; credits_balance: number }>(
+      '/generation-tasks',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          character_id: characterId,
+          type: kind,
+          caption: caption ?? null,
+          style_template_code: styleTemplateCode ?? null,
+          conversation_id: null,
+        }),
+      },
+    ),
 
   /** 轮询生成任务状态。 */
   getGeneration: (taskId: string) =>
-    request<{ status: string; url?: string; progress?: number }>(`/generation-tasks/${taskId}`),
+    request<{
+      id: string;
+      type: string;
+      status: string;
+      url?: string;
+      credits_cost: number;
+      error_message?: string;
+      created_at: string;
+      completed_at?: string | null;
+    }>(`/generation-tasks/${taskId}`),
 
   /** 发送消息（可带图片/视频附件）。 */
   sendMessage: (characterId: string, content: string, attachmentIds: string[]) =>

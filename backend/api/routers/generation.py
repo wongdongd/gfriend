@@ -49,16 +49,33 @@ async def create_task(req: CreateTaskRequest, user: User = Depends(get_current_u
     if not character or character.status == CharacterStatus.DELETED:
         raise AppError(ErrorCode.RESOURCE_CHARACTER_NOT_FOUND)
 
-    # 估算积分消耗（MVP 固定值）
-    credits_cost = 10 if req.type == TaskType.IMAGE else 50
+    # 估算积分消耗（MVP 固定值；从 settings 读取便于运营调整）
+    if req.type == TaskType.IMAGE:
+        credits_cost = settings.image_cost_credits
+    else:
+        credits_cost = settings.video_cost_credits
 
-    # 悲观锁：SELECT ... FOR UPDATE 防止并发超额消费
-    lock_result = await db.execute(
-        select(User).where(User.id == user.id).with_for_update()
+    # 是否为首张角色形象图：用户尚无任何角色 → 此次生成视为"首次赠送"
+    # 此场景下免积分扣减，不校验余额与订阅。其余场景必须校验积分。
+    existing_chars_q = await db.execute(
+        select(Character.id).where(Character.user_id == user.id, Character.status != CharacterStatus.DELETED).limit(1)
     )
-    locked_user = lock_result.scalar_one()
-    if locked_user.credits_balance < credits_cost:
-        raise AppError(ErrorCode.BILLING_INSUFFICIENT_CREDITS)
+    is_first_portrait = existing_chars_q.first() is None and req.type == TaskType.IMAGE
+
+    if is_first_portrait:
+        # 免费首张：不冻结积分，不写 FREEZE 流水；credits_cost 记 0 以便后续审计/取消时正确处理
+        credits_cost = 0
+        locked_user = None
+    else:
+        # 悲观锁：SELECT ... FOR UPDATE 防止并发超额消费
+        lock_result = await db.execute(
+            select(User).where(User.id == user.id).with_for_update()
+        )
+        locked_user = lock_result.scalar_one()
+        if locked_user.credits_balance < credits_cost:
+            raise AppError(ErrorCode.BILLING_INSUFFICIENT_CREDITS)
+        # 冻结积分（提交事务原子）
+        locked_user.credits_balance -= credits_cost
 
     # 组装输入快照
     input_snapshot = json.dumps({
@@ -72,8 +89,7 @@ async def create_task(req: CreateTaskRequest, user: User = Depends(get_current_u
     # 幂等键
     idem_key = f"gen:{user.id}:{uuid.uuid4().hex}"
 
-    # 冻结积分 + 创建任务 + Outbox（同一事务）
-    locked_user.credits_balance -= credits_cost
+    # 创建任务 + Outbox（同一事务）；积分已在上方分支冻结
     task = GenerationTask(
         user_id=user.id,
         character_id=character.id,
@@ -100,14 +116,18 @@ async def create_task(req: CreateTaskRequest, user: User = Depends(get_current_u
         "task_id": str(task.id),
         "status": task.status.value,
         "credits_cost": credits_cost,
-        "credits_balance": locked_user.credits_balance,
+        "credits_balance": locked_user.credits_balance if locked_user is not None else user.credits_balance,
     }
 
 
 @router.get("/{task_id}")
 async def get_task(task_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """查看生成任务状态。成功后返回结果签名访问 URL。"""
+    import logging
+
     from db.models.asset import Asset
+
+    logger = logging.getLogger(__name__)
 
     result = await db.execute(select(GenerationTask).where(GenerationTask.id == task_id, GenerationTask.user_id == user.id))
     task = result.scalar_one_or_none()
@@ -122,7 +142,19 @@ async def get_task(task_id: uuid.UUID, user: User = Depends(get_current_user), d
             from provider_adapters.storage import get_storage
 
             storage = get_storage()
-            url = await storage.presigned_get_url(asset.object_key, settings.s3_presign_expires)
+            try:
+                url = await storage.presigned_get_url(asset.object_key, settings.s3_presign_expires)
+            except Exception as e:  # noqa: BLE001
+                # 对象存储不可达时降级：返回 null url，前端展示"暂时不可用"而非 500
+                logger.warning("生成签名 URL 失败 (object_key=%s): %s", asset.object_key, e)
+        else:
+            logger.warning(
+                "任务 %s 标记 SUCCESS 但 asset 缺失或 object_key 为空: result_asset_id=%s",
+                task_id,
+                task.result_asset_id,
+            )
+    elif task.status == TaskStatus.SUCCESS:
+        logger.warning("任务 %s 标记 SUCCESS 但 result_asset_id 为空", task_id)
 
     return {
         "id": str(task.id),

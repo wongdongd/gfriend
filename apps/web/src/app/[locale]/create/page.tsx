@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { useAuth } from '@/lib/auth-context';
@@ -34,7 +34,7 @@ const STYLES = [
   { code: 'ink_wash', icon: '◆' },
 ];
 
-const STEP_KEYS = ['stepRelationship', 'stepPersonality', 'stepStyle', 'stepIdentity'];
+const STEP_KEYS = ['stepRelationship', 'stepPersonality', 'stepStyle', 'stepIdentity', 'stepPortrait'];
 
 export default function CreatePage() {
   const router = useRouter();
@@ -49,9 +49,24 @@ export default function CreatePage() {
   const [preference, setPreference] = useState('');
   const [creating, setCreating] = useState(false);
 
+  // 生成阶段状态
+  const [characterId, setCharacterId] = useState<string | null>(null);
+  const [genTaskId, setGenTaskId] = useState<string | null>(null);
+  const [genStatus, setGenStatus] = useState<'idle' | 'pending' | 'success' | 'failed'>('idle');
+  const [genUrl, setGenUrl] = useState<string | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     if (!loading && !user) router.push('/login');
   }, [user, loading, router]);
+
+  // 卸载时清理轮询
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
 
   const canNext = () => {
     if (step === 0) return !!relationship;
@@ -60,22 +75,67 @@ export default function CreatePage() {
     return step === 3 && name.trim().length > 0;
   };
 
+  // 创建角色成功后立即发起首张形象图生成
+  const startPortrait = async (charId: string) => {
+    setGenStatus('pending');
+    setGenError(null);
+    setGenUrl(null);
+    try {
+      const res = await api.createGeneration('image', charId, undefined, style || undefined);
+      setGenTaskId(res.task_id);
+      // 开始轮询
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = setInterval(async () => {
+        try {
+          const task = await api.getGeneration(res.task_id);
+          if (task.status === 'success' || task.status === 'SUCCESS') {
+            if (pollRef.current) clearInterval(pollRef.current);
+            setGenStatus('success');
+            setGenUrl(task.url ?? null);
+          } else if (task.status === 'failed' || task.status === 'FAILED' || task.status === 'cancelled' || task.status === 'CANCELLED') {
+            if (pollRef.current) clearInterval(pollRef.current);
+            setGenStatus('failed');
+            setGenError(task.error_message || t('create.genFailed'));
+          }
+        } catch {
+          // 单次轮询失败忽略，下次重试
+        }
+      }, 2000);
+    } catch (err) {
+      setGenStatus('failed');
+      setGenError(translateError(t, err));
+    }
+  };
+
+  const regenerate = async () => {
+    if (!characterId) return;
+    setGenTaskId(null);
+    await startPortrait(characterId);
+  };
+
   const create = async () => {
     setCreating(true);
     try {
-      await api.post('/characters', {
+      const created = await api.post<{ id: string }>('/characters', {
         name: name.trim(),
         companion_preference: preference.trim() || null,
         relationship_template_code: relationship,
         personality_template_code: personality,
         visual_style_code: style,
       });
-      router.push('/chat');
+      setCharacterId(created.id);
+      setStep(4);
+      // 立刻发起首张形象图生成（不阻塞 UI，状态会驱动渲染）
+      startPortrait(created.id);
     } catch (err) {
       alert(translateError(t, err));
     } finally {
       setCreating(false);
     }
+  };
+
+  const finishToChat = () => {
+    router.push('/chat');
   };
 
   if (loading) {
@@ -304,16 +364,92 @@ export default function CreatePage() {
               </div>
             </div>
           )}
+
+          {/* 步骤 4：生成首张形象图 */}
+          {step === 4 && (
+            <div className="animate-fade-in-up">
+              <h2 className="m-0 mb-1.5 text-xl font-semibold text-foreground">
+                {t('create.portraitTitle')}
+              </h2>
+              <p className="m-0 mb-2 text-[13px] text-foreground/45">{t('create.portraitDesc')}</p>
+              <p className="m-0 mb-7 inline-flex items-center gap-1.5 rounded-md border border-[#34d399]/30 bg-[#34d399]/10 px-2.5 py-1 text-[11px] font-medium text-[#34d399]">
+                ✦ {t('create.firstPortraitFreeHint')}
+              </p>
+
+              <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-xl border border-white/[0.07] bg-[#13141b]">
+                {/* 生成中：脉冲骨架 */}
+                {genStatus === 'pending' && (
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="h-44 w-44 animate-pulse rounded-full bg-gradient-to-br from-[#7c3aed]/30 to-[#5b21b6]/20" />
+                    <div className="flex items-center gap-2 text-[13px] text-foreground/50">
+                      <span className="spin inline-block h-4 w-4 rounded-full border-2 border-white/30 border-t-white" />
+                      {t('create.genPending')}
+                    </div>
+                  </div>
+                )}
+
+                {/* 成功：展示图片 */}
+                {genStatus === 'success' && genUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={genUrl}
+                    alt={name}
+                    className="max-h-[420px] w-full object-contain"
+                  />
+                )}
+
+                {/* 成功但 URL 为空 */}
+                {genStatus === 'success' && !genUrl && (
+                  <div className="text-[13px] text-foreground/50">{t('create.genNoUrl')}</div>
+                )}
+
+                {/* 失败 */}
+                {genStatus === 'failed' && (
+                  <div className="flex flex-col items-center gap-3 text-center">
+                    <div className="text-3xl text-[#f43f5e]">⚠</div>
+                    <div className="max-w-md text-[13px] text-foreground/60">
+                      {genError || t('create.genFailed')}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 生成后操作行 */}
+              {(genStatus === 'success' || genStatus === 'failed') && (
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={regenerate}
+                    disabled={!characterId}
+                    className="rounded-lg border border-white/10 px-4 py-2 text-[13px] text-foreground/70 transition hover:border-primary/30 hover:text-foreground disabled:opacity-40"
+                  >
+                    {t('create.regenerate')}
+                  </button>
+                  {genStatus === 'success' && (
+                    <span className="text-xs text-foreground/40">{t('create.genSuccessHint')}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 底部导航按钮 */}
         <div className="mt-6 flex items-center justify-between">
-          <button
-            onClick={() => (step > 0 ? setStep(step - 1) : router.push('/chat'))}
-            className="rounded-lg border border-white/10 px-5 py-2.5 text-[13px] text-foreground/50 transition hover:border-primary/30 hover:text-foreground"
-          >
-            {step === 0 ? t('create.cancel') : t('create.back')}
-          </button>
+          {step === 4 ? (
+            <button
+              onClick={() => router.push('/chat')}
+              className="rounded-lg border border-white/10 px-5 py-2.5 text-[13px] text-foreground/50 transition hover:border-primary/30 hover:text-foreground"
+            >
+              {t('create.skip')}
+            </button>
+          ) : (
+            <button
+              onClick={() => (step > 0 ? setStep(step - 1) : router.push('/chat'))}
+              className="rounded-lg border border-white/10 px-5 py-2.5 text-[13px] text-foreground/50 transition hover:border-primary/30 hover:text-foreground"
+            >
+              {step === 0 ? t('create.cancel') : t('create.back')}
+            </button>
+          )}
 
           {step < 3 ? (
             <button
@@ -323,7 +459,7 @@ export default function CreatePage() {
             >
               {t('create.continue')}
             </button>
-          ) : (
+          ) : step === 3 ? (
             <button
               onClick={create}
               disabled={!canNext() || creating}
@@ -337,6 +473,15 @@ export default function CreatePage() {
               ) : (
                 t('create.createButton')
               )}
+            </button>
+          ) : (
+            // step === 4：生成成功/失败后均可"开始对话"
+            <button
+              onClick={finishToChat}
+              disabled={genStatus === 'pending'}
+              className="flex items-center gap-2 rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] px-6 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {genStatus === 'pending' ? t('create.genPending') : t('create.startChat')}
             </button>
           )}
         </div>

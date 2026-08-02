@@ -115,6 +115,14 @@ class Settings(BaseSettings):
     # ---------- 限流 ----------
     rate_limit_per_minute: int = 60
 
+    # ---------- 积分 ----------
+    # 新用户注册即赠送的初始积分（用于首次生成角色形象图之外的所有生成消耗）
+    signup_grant_credits: int = 200
+    # 图片生成的固定积分消耗（MVP 固定值）
+    image_cost_credits: int = 10
+    # 视频生成的固定积分消耗（MVP 固定值）
+    video_cost_credits: int = 50
+
     @property
     def is_dev(self) -> bool:
         return self.app_env == "development"

@@ -41,7 +41,11 @@ export default function ChatPage() {
       api.get<Character[]>('/characters').then((data) => {
         const list = Array.isArray(data) ? data : (data as { items?: Character[] }).items || [];
         setCharacters(list);
-        if (list.length > 0) selectCharacter(list[0]);
+        // 优先从 URL ?character_id= 读取指定角色，否则取列表第一个
+        const params = new URLSearchParams(window.location.search);
+        const requestedId = params.get('character_id');
+        const initial = (requestedId && list.find((c) => c.id === requestedId)) || list[0];
+        if (initial) selectCharacter(initial);
       });
     }
   }, [user]);
@@ -158,8 +162,8 @@ export default function ChatPage() {
   const generate = async (kind: 'image' | 'video', prompt: string) => {
     if (!current) return;
     try {
-      const res = await api.createGeneration(kind, prompt, current.id);
-      const taskId = (res as { task_id: string }).task_id;
+      const res = await api.createGeneration(kind, current.id, prompt || undefined, undefined);
+      const taskId = res.task_id;
       const gen: GenerationState = { status: 'pending', kind, task_id: taskId };
       setMessages((prev) => [
         ...prev,
@@ -265,6 +269,12 @@ export default function ChatPage() {
       <div className="flex-1 overflow-hidden pt-16">
         <ChatLayout
           characterName={current?.name ?? ''}
+          characters={characters}
+          currentId={current?.id ?? null}
+          onSelectCharacter={(id) => {
+            const found = characters.find((c) => c.id === id);
+            if (found) selectCharacter(found);
+          }}
           messages={messages}
           loading={false}
           onSend={(text, attachments) => {

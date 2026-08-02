@@ -114,7 +114,20 @@
     "addReferenceSub": "クリックしてローカル画像をアップロード",
     "historyCreations": "最近の参考図",
     "noReferences": "参考図はまだありません",
-    "inject": "送信"
+    "inject": "送信",
+    "manageCharacters": "全キャラを管理 →"
+  },
+  "characters": {
+    "title": "マイキャラ",
+    "createNew": "✦ 新しく作る",
+    "empty": "まだキャラを作っていません",
+    "emptyHint": "最初のキャラを作って陪伴の旅を始めよう",
+    "startChat": "チャット開始",
+    "delete": "キャラを削除",
+    "confirmDelete": "削除する",
+    "cancelDelete": "キャンセル",
+    "unknown": "未分類",
+    "manageCharacters": "全キャラを管理 →"
   },
   "create": {
     "chooseRelationship": "関係を選ぶ",
@@ -145,6 +158,17 @@
     "stepPersonality": "性格",
     "stepStyle": "スタイル",
     "stepIdentity": "アイデンティティ",
+    "stepPortrait": "ポートレート",
+    "portraitTitle": "最初のポートレートを生成",
+    "portraitDesc": "選んだスタイルと性格から画像を生成しています。少々お待ちを。",
+    "firstPortraitFreeHint": "最初のポートレートは無料 — クレジット不要。",
+    "genPending": "描画中…",
+    "genFailed": "生成に失敗しました。再試行またはスキップして先へ進めます。",
+    "genNoUrl": "画像は生成されましたが、URL を一時取得できません。後でチャットで確認できます。",
+    "genSuccessHint": "気に入りましたか？再生成するか、そのままチャットへ。",
+    "regenerate": "↻ やり直す",
+    "skip": "ひとまずスキップ",
+    "startChat": "チャットを始める →",
     "relationships": {
       "friend": {
         "label": "友達",

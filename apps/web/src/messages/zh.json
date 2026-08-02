@@ -114,7 +114,20 @@
     "addReferenceSub": "点击上传本地图片",
     "historyCreations": "历史参考图",
     "noReferences": "还没有参考图",
-    "inject": "发送"
+    "inject": "发送",
+    "manageCharacters": "管理全部角色 →"
+  },
+  "characters": {
+    "title": "我的角色",
+    "createNew": "✦ 创建新角色",
+    "empty": "你还没有创建任何角色",
+    "emptyHint": "创建你的第一个角色，开启陪伴之旅",
+    "startChat": "开始对话",
+    "delete": "删除角色",
+    "confirmDelete": "确认删除",
+    "cancelDelete": "取消",
+    "unknown": "未分类",
+    "manageCharacters": "管理全部角色 →"
   },
   "create": {
     "chooseRelationship": "选择你们的关系",
@@ -145,6 +158,17 @@
     "stepPersonality": "性格",
     "stepStyle": "风格",
     "stepIdentity": "身份",
+    "stepPortrait": "形象",
+    "portraitTitle": "生成 TA 的第一张形象图",
+    "portraitDesc": "我们正在用你刚选的风格与性格组合出一张图，请稍候。",
+    "firstPortraitFreeHint": "首张形象图免费赠送 — 不消耗积分。",
+    "genPending": "正在绘制中…",
+    "genFailed": "生成失败。可以重试，或先跳过进入对话。",
+    "genNoUrl": "图片已生成，但临时无法获取地址。稍后可在对话中查看。",
+    "genSuccessHint": "喜欢吗？可以重新生成，或直接进入对话。",
+    "regenerate": "↻ 重新生成",
+    "skip": "先跳过",
+    "startChat": "开始对话 →",
     "relationships": {
       "friend": {
         "label": "朋友",

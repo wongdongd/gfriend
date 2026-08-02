@@ -114,7 +114,20 @@
     "addReferenceSub": "Click to upload local image",
     "historyCreations": "Recent references",
     "noReferences": "No references yet",
-    "inject": "Send"
+    "inject": "Send",
+    "manageCharacters": "Manage all characters →"
+  },
+  "characters": {
+    "title": "My Characters",
+    "createNew": "✦ Create New",
+    "empty": "You haven't created any characters yet",
+    "emptyHint": "Create your first character and start your journey",
+    "startChat": "Start Chat",
+    "delete": "Delete character",
+    "confirmDelete": "Confirm delete",
+    "cancelDelete": "Cancel",
+    "unknown": "Uncategorized",
+    "manageCharacters": "Manage all characters →"
   },
   "create": {
     "chooseRelationship": "Choose your relationship",
@@ -145,6 +158,17 @@
     "stepPersonality": "Personality",
     "stepStyle": "Style",
     "stepIdentity": "Identity",
+    "stepPortrait": "Portrait",
+    "portraitTitle": "Generate their first portrait",
+    "portraitDesc": "We're composing an image from the style and personality you just chose. Hang tight.",
+    "firstPortraitFreeHint": "First portrait is on us — no credits needed.",
+    "genPending": "Painting in progress…",
+    "genFailed": "Generation failed. You can retry or skip for now.",
+    "genNoUrl": "Image generated, but the URL is temporarily unavailable. You can view it in chat later.",
+    "genSuccessHint": "Like it? You can regenerate or head to chat.",
+    "regenerate": "↻ Regenerate",
+    "skip": "Skip for now",
+    "startChat": "Start Chatting →",
     "relationships": {
       "friend": {
         "label": "Friend",

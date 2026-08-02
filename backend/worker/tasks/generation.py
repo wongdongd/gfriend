@@ -32,7 +32,11 @@ def generate_video(self, task_id: str) -> dict:
 
 
 async def _generate(task_id: str, kind: str) -> dict:
-    """实际生成逻辑。"""
+    """实际生成逻辑。
+
+    事务策略：把"加载任务 + 调用模型 + 轮询"与"写回结果"拆成独立事务，
+    避免在单个长事务里持有数据库连接/锁跨越 `time.sleep` 轮询等待。
+    """
     import uuid
 
     from sqlalchemy import select
@@ -45,133 +49,162 @@ async def _generate(task_id: str, kind: str) -> dict:
     from provider_adapters.vision.base import TaskKind, VisionRequest
     from shared.database import async_session_factory
 
+    task_uuid = uuid.UUID(task_id)
+
+    # ===== 事务 1：加载任务，标记 RUNNING =====
     async with async_session_factory() as db:  # type: AsyncSession
-        # 加载任务
-        result = await db.execute(select(GenerationTask).where(GenerationTask.id == uuid.UUID(task_id)))
+        result = await db.execute(select(GenerationTask).where(GenerationTask.id == task_uuid))
         task = result.scalar_one_or_none()
         if not task:
             return {"status": "not_found"}
-
         if task.status == TaskStatus.CANCELLED:
             return {"status": "cancelled"}
 
-        try:
-            task.status = TaskStatus.RUNNING
+        # 快照任务输入（脱离 session 后仍可用）
+        task_user_id = task.user_id
+        task_character_id = task.character_id
+        task_credits_cost = task.credits_cost
+        snapshot = json.loads(task.input_snapshot)
+
+        task.status = TaskStatus.RUNNING
+        await db.commit()
+
+    # ===== 事务外：调用视觉模型 + 轮询（不持有 DB 连接）=====
+    prompt_parts = []
+    if snapshot.get("character_visual_prompt"):
+        prompt_parts.append(snapshot["character_visual_prompt"])
+    if snapshot.get("style_template_code"):
+        prompt_parts.append(snapshot["style_template_code"])
+    if snapshot.get("caption"):
+        prompt_parts.append(snapshot["caption"])
+    prompt = ", ".join(prompt_parts)
+
+    adapter = get_image_adapter() if kind == "image" else get_video_adapter()
+    request = VisionRequest(
+        prompt=prompt,
+        kind=TaskKind.IMAGE if kind == "image" else TaskKind.VIDEO,
+        character_visual_prompt=snapshot.get("character_visual_prompt", ""),
+    )
+
+    try:
+        provider_task_id = await adapter.submit(request)
+
+        # 记录 provider 任务 ID（独立短事务）
+        async with async_session_factory() as db:  # type: AsyncSession
+            r = await db.execute(select(GenerationTask).where(GenerationTask.id == task_uuid))
+            t = r.scalar_one()
+            t.provider_task_id = provider_task_id
+            t.provider = adapter.provider_name
             await db.commit()
 
-            # 解析输入快照
-            snapshot = json.loads(task.input_snapshot)
-            prompt_parts = []
-            if snapshot.get("character_visual_prompt"):
-                prompt_parts.append(snapshot["character_visual_prompt"])
-            if snapshot.get("style_template_code"):
-                prompt_parts.append(snapshot["style_template_code"])
-            if snapshot.get("caption"):
-                prompt_parts.append(snapshot["caption"])
-            prompt = ", ".join(prompt_parts)
+        # 轮询结果（简化：最多等待 60 秒）——不持有 DB 连接
+        import time
+        vision_result = None
+        for _ in range(30):
+            vision_result = await adapter.get_status(provider_task_id)
+            if vision_result.status.value == "success":
+                break
+            if vision_result.status.value == "failed":
+                raise Exception(vision_result.error or "生成失败")
+            time.sleep(2)
 
-            # 选择适配器
-            adapter = get_image_adapter() if kind == "image" else get_video_adapter()
-            request = VisionRequest(
-                prompt=prompt,
-                kind=TaskKind.IMAGE if kind == "image" else TaskKind.VIDEO,
-                character_visual_prompt=snapshot.get("character_visual_prompt", ""),
-            )
+        if vision_result is None or vision_result.status.value != "success":
+            raise Exception("生成超时")
 
-            # 提交并轮询
-            provider_task_id = await adapter.submit(request)
-            task.provider_task_id = provider_task_id
-            task.provider = adapter.provider_name
-            await db.commit()
-
-            # 轮询结果（简化：最多等待 60 秒）
-            import time
-            for _ in range(30):
-                result = await adapter.get_status(provider_task_id)
-                if result.status.value == "success":
-                    break
-                if result.status.value == "failed":
-                    raise Exception(result.error or "生成失败")
-                time.sleep(2)
-
-            if result.status.value != "success":
-                raise Exception("生成超时")
-
-            # 保存作品素材
-            from db.models.asset import Asset, AssetSource, AssetType
-            from db.models.conversation import SafetyStatus
-
-            asset = Asset(
-                owner_id=task.user_id,
-                character_id=task.character_id,
-                type=AssetType.GENERATED_IMAGE if kind == "image" else AssetType.GENERATED_VIDEO,
-                source=AssetSource.GENERATION,
-                object_key=result.object_key or "",
-                mime_type=result.mime_type,
-                width=result.width,
-                height=result.height,
-                duration_seconds=result.duration_seconds,
-                generation_task_id=task.id,
-                safety_status=SafetyStatus.PENDING,
-            )
-            db.add(asset)
-
-            # 创建 Work（时间线展示）
-            from db.models.asset import Work
-
-            work = Work(
-                character_id=task.character_id,
-                user_id=task.user_id,
-                generation_task_id=task.id,
-                primary_asset_id=asset.id,
-                scene_template_code=snapshot.get("scene_template_code"),
-                style_template_code=snapshot.get("style_template_code"),
-                caption=snapshot.get("caption"),
-            )
-            db.add(work)
-
-            # 确认扣费（悲观锁读取最新余额）
-            task.status = TaskStatus.SUCCESS
-            task.result_asset_id = asset.id
-
+    except Exception as e:
+        # ===== 事务：标记 FAILED + 退回积分 =====
+        logger.exception("生成任务失败: %s", task_id)
+        async with async_session_factory() as db:  # type: AsyncSession
+            r = await db.execute(select(GenerationTask).where(GenerationTask.id == task_uuid))
+            t = r.scalar_one_or_none()
+            if t is not None:
+                t.status = TaskStatus.FAILED
+                t.error_message = str(e)
             user_result = await db.execute(
-                select(User).where(User.id == task.user_id).with_for_update()
-            )
-            u = user_result.scalar_one_or_none()
-            balance_after = u.credits_balance if u else 0
-
-            ledger = CreditLedger(
-                user_id=task.user_id,
-                type=CreditEntryType.CONSUME,
-                amount=-task.credits_cost,
-                balance_after=balance_after,
-                related_task_id=task.id,
-                idempotency_key=f"consume:{task.id}",
-            )
-            db.add(ledger)
-            await db.commit()
-
-            return {"status": "success", "asset_id": str(asset.id)}
-
-        except Exception as e:
-            logger.exception("生成任务失败: %s", task_id)
-            task.status = TaskStatus.FAILED
-            task.error_message = str(e)
-            # 退回积分（悲观锁）
-            user_result = await db.execute(
-                select(User).where(User.id == task.user_id).with_for_update()
+                select(User).where(User.id == task_user_id).with_for_update()
             )
             u = user_result.scalar_one_or_none()
             if u:
-                u.credits_balance += task.credits_cost
-                refund = CreditLedger(
-                    user_id=task.user_id,
+                u.credits_balance += task_credits_cost
+                db.add(CreditLedger(
+                    user_id=task_user_id,
                     type=CreditEntryType.REFUND,
-                    amount=task.credits_cost,
+                    amount=task_credits_cost,
                     balance_after=u.credits_balance,
-                    related_task_id=task.id,
-                    idempotency_key=f"refund:{task.id}",
-                )
-                db.add(refund)
+                    related_task_id=task_uuid,
+                    idempotency_key=f"refund:{task_uuid}",
+                ))
             await db.commit()
-            return {"status": "failed", "error": str(e)}
+        return {"status": "failed", "error": str(e)}
+
+    # ===== 事务 2：保存 asset + work + 标记 SUCCESS + 扣费 =====
+    from db.models.asset import Asset, AssetSource, AssetType, Work
+    from db.models.conversation import SafetyStatus
+
+    async with async_session_factory() as db:  # type: AsyncSession
+        # 重新加载 task（确保 attached 到当前 session）
+        r = await db.execute(select(GenerationTask).where(GenerationTask.id == task_uuid))
+        task = r.scalar_one()
+
+        # 创建 Asset
+        asset = Asset(
+            owner_id=task_user_id,
+            character_id=task_character_id,
+            type=AssetType.GENERATED_IMAGE if kind == "image" else AssetType.GENERATED_VIDEO,
+            source=AssetSource.GENERATION,
+            object_key=vision_result.object_key or "",
+            mime_type=vision_result.mime_type,
+            width=vision_result.width,
+            height=vision_result.height,
+            duration_seconds=vision_result.duration_seconds,
+            generation_task_id=task_uuid,
+            safety_status=SafetyStatus.PENDING,
+        )
+        db.add(asset)
+        await db.flush()  # 生成 asset.id
+
+        # 创建 Work
+        db.add(Work(
+            character_id=task_character_id,
+            user_id=task_user_id,
+            generation_task_id=task_uuid,
+            primary_asset_id=asset.id,
+            scene_template_code=snapshot.get("scene_template_code"),
+            style_template_code=snapshot.get("style_template_code"),
+            caption=snapshot.get("caption"),
+        ))
+
+        # 标记 SUCCESS 并关联 asset
+        task.status = TaskStatus.SUCCESS
+        task.result_asset_id = asset.id
+        logger.info(
+            "[诊断] commit 前: task.id=%s asset.id=%s task.result_asset_id=%s (in-memory)",
+            task.id, asset.id, task.result_asset_id,
+        )
+
+        # 确认扣费（悲观锁读取最新余额）
+        user_result = await db.execute(
+            select(User).where(User.id == task_user_id).with_for_update()
+        )
+        u = user_result.scalar_one_or_none()
+        balance_after = u.credits_balance if u else 0
+
+        db.add(CreditLedger(
+            user_id=task_user_id,
+            type=CreditEntryType.CONSUME,
+            amount=-task_credits_cost,
+            balance_after=balance_after,
+            related_task_id=task_uuid,
+            idempotency_key=f"consume:{task_uuid}",
+        ))
+
+        await db.commit()
+        logger.info("[诊断] commit 后: task.result_asset_id=%s (in-memory)", task.result_asset_id)
+
+        # 重新查询验证是否真的写进数据库
+        await db.refresh(task)
+        logger.info(
+            "[诊断] refresh 后: task.result_asset_id=%s task.status=%s (from DB)",
+            task.result_asset_id, task.status.value if task.status else None,
+        )
+        return {"status": "success", "asset_id": str(asset.id)}

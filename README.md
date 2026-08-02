@@ -63,13 +63,19 @@ python main.py migrate           # 执行数据库迁移
 python main.py                   # 启动 API（默认），等价于 python main.py api
 ```
 
-### 3. 启动 Worker
+### 3. 启动 Worker + Beat
+
+> Windows 注意：Celery 在 Windows 上禁止 `-B` 内嵌 beat，必须拆成两个进程。
+> POSIX（Linux/macOS）开发环境可设 `CELERY_EMBED_BEAT=1` 让 worker 内嵌 beat，或同样拆两个进程。
 
 ```bash
 cd backend
-source .venv/bin/activate        # 激活上面的同一虚拟环境
-python main.py worker            # 启动 Celery Worker
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+python main.py worker            # 终端 1：Celery Worker（Windows 自动用 solo pool）
+python main.py beat              # 终端 2：Celery Beat 调度器（周期性扫描 Outbox 投递任务）
 ```
+
+Beat 每 5 秒扫描一次 `outbox_events` 表，把未发布的事件投递到对应队列（image/video/safety）。
 
 ### 4. 启动前端
 

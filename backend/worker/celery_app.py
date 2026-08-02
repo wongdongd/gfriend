@@ -37,6 +37,14 @@ app.conf.update(
         "worker.tasks.safety.moderate_text": {"queue": "safety"},
         "worker.tasks.safety.moderate_image": {"queue": "safety"},
     },
+    # Celery Beat：周期性扫描 Outbox，把未发布事件投递到对应队列
+    beat_schedule={
+        "outbox-pending-every-5s": {
+            "task": "worker.tasks.outbox.process_pending",
+            "schedule": 5.0,  # 每 5 秒扫描一次
+            "args": (100,),   # batch_size
+        },
+    },
 )
 
 # 自动发现任务（worker.tasks 包下的 task 模块）

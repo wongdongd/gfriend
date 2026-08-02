@@ -24,6 +24,7 @@ from api.core.security import (
     verify_password,
 )
 from db.models.user import AgeStatus, AuthIdentity, AuthProvider, User
+from db.models.billing import CreditEntryType, CreditLedger
 from shared.config import settings
 from shared.database import get_db
 
@@ -103,16 +104,36 @@ async def list_providers():
 
 @router.post("/register", response_model=TokenResponse)
 async def register(req: RegisterRequest, response: Response, db: AsyncSession = Depends(get_db)):
-    """邮箱注册。"""
+    """邮箱注册。
+
+    新用户即赠送 ``settings.signup_grant_credits`` 积分（默认 200），
+    用于后续图片/视频生成消耗。同时写入一条 GRANT 流水以便审计。
+    """
     existing = await db.execute(select(User).where(User.email == req.email))
     if existing.scalar_one_or_none():
         raise AppError(ErrorCode.AUTH_EMAIL_TAKEN)
-    user = User(email=req.email, email_verified=False, password_hash=hash_password(req.password), display_name=req.display_name, age_status=AgeStatus.UNCONFIRMED)
+    grant = settings.signup_grant_credits
+    user = User(
+        email=req.email,
+        email_verified=False,
+        password_hash=hash_password(req.password),
+        display_name=req.display_name,
+        age_status=AgeStatus.UNCONFIRMED,
+        credits_balance=grant,
+    )
     db.add(user)
     await db.flush()
     identity = AuthIdentity(user_id=user.id, provider=AuthProvider.EMAIL, provider_account_id=req.email, provider_email=req.email)
     db.add(identity)
     await db.flush()
+    # 注册赠送积分流水（审计用）
+    db.add(CreditLedger(
+        user_id=user.id,
+        type=CreditEntryType.GRANT,
+        amount=grant,
+        balance_after=grant,
+        note="signup_grant",
+    ))
     access_token = create_access_token(user.id)
     refresh_token, jti = create_refresh_token(user.id)
     await store_refresh_token(str(user.id), jti)
