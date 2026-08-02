@@ -7,6 +7,8 @@
 """
 from __future__ import annotations
 
+import logging
+import re
 from contextlib import suppress
 
 from celery import Celery
@@ -19,6 +21,9 @@ app = Celery(
 )
 
 app.conf.update(
+    # 日志：不劫持 root logger——保留 shared.logging_config 配置的文件+控制台 handler，
+    # 否则 Celery 启动时会移除 root handlers，导致 worker.log 只写入初始化行
+    worker_hijack_root_logger=False,
     # 序列化
     task_serializer="json",
     result_serializer="json",
@@ -54,3 +59,29 @@ app.autodiscover_tasks(["worker"], "tasks")
 # 显式导入确保任务注册（autodiscover 在某些启动方式下不会立即触发）
 with suppress(ImportError):
     from worker.tasks import generation, outbox, safety  # noqa: F401, E402
+
+
+class _OutboxIdleFilter(logging.Filter):
+    """过滤 Outbox 扫描任务（每 5 秒一次）的空转日志。
+
+    - "received" 行不含结果信息，一律丢弃；
+    - "succeeded ... {'published': 0}" 空转成功记录丢弃；
+    - 真正投递（published > 0）、失败/重试的日志全部保留。
+    """
+
+    _TASK = "worker.tasks.outbox.process_pending"
+    _IDLE_RE = re.compile(r"'published': 0\s*[,}]")
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        if self._TASK not in msg:
+            return True
+        if msg.endswith("received"):
+            return False
+        if "succeeded" in msg and self._IDLE_RE.search(msg):
+            return False
+        return True
+
+
+for _noisy_logger in ("celery.worker.strategy", "celery.app.trace"):
+    logging.getLogger(_noisy_logger).addFilter(_OutboxIdleFilter())
