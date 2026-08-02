@@ -1,5 +1,11 @@
-﻿"""S3 兼容对象存储适配器（基于 boto3，本地对接 MinIO）。"""
+﻿"""S3 兼容对象存储适配器（基于 boto3，本地对接 MinIO）。
+
+所有方法均为真正的异步实现：boto3 同步调用通过 ``asyncio.to_thread``
+包装到线程池执行，不会阻塞 FastAPI 事件循环。
+"""
 from __future__ import annotations
+
+import asyncio
 
 from provider_adapters.storage.base import StorageAdapter
 
@@ -28,6 +34,7 @@ class S3StorageAdapter(StorageAdapter):
             config=Config(s3={"addressing_style": "path" if use_path_style else "auto"}),
         )
         self._bucket = bucket
+        self._loop = asyncio.get_running_loop()
         # 确保 bucket 存在
         try:
             self._s3.head_bucket(Bucket=bucket)
@@ -39,26 +46,38 @@ class S3StorageAdapter(StorageAdapter):
         return "s3"
 
     async def upload(self, object_key: str, data: bytes, content_type: str) -> str:
-        self._s3.put_object(Bucket=self._bucket, Key=object_key, Body=data, ContentType=content_type)
+        await asyncio.to_thread(
+            self._s3.put_object,
+            Bucket=self._bucket,
+            Key=object_key,
+            Body=data,
+            ContentType=content_type,
+        )
         return object_key
 
     async def download(self, object_key: str) -> bytes:
-        resp = self._s3.get_object(Bucket=self._bucket, Key=object_key)
+        resp = await asyncio.to_thread(
+            self._s3.get_object, Bucket=self._bucket, Key=object_key
+        )
         return resp["Body"].read()
 
     async def delete(self, object_key: str) -> bool:
-        self._s3.delete_object(Bucket=self._bucket, Key=object_key)
+        await asyncio.to_thread(
+            self._s3.delete_object, Bucket=self._bucket, Key=object_key
+        )
         return True
 
     async def presigned_get_url(self, object_key: str, expires: int) -> str:
-        return self._s3.generate_presigned_url(
+        return await asyncio.to_thread(
+            self._s3.generate_presigned_url,
             "get_object",
             Params={"Bucket": self._bucket, "Key": object_key},
             ExpiresIn=expires,
         )
 
     async def presigned_put_url(self, object_key: str, expires: int, content_type: str) -> str:
-        return self._s3.generate_presigned_url(
+        return await asyncio.to_thread(
+            self._s3.generate_presigned_url,
             "put_object",
             Params={"Bucket": self._bucket, "Key": object_key, "ContentType": content_type},
             ExpiresIn=expires,

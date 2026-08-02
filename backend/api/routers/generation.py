@@ -51,7 +51,13 @@ async def create_task(req: CreateTaskRequest, user: User = Depends(get_current_u
 
     # 估算积分消耗（MVP 固定值）
     credits_cost = 10 if req.type == TaskType.IMAGE else 50
-    if user.credits_balance < credits_cost:
+
+    # 悲观锁：SELECT ... FOR UPDATE 防止并发超额消费
+    lock_result = await db.execute(
+        select(User).where(User.id == user.id).with_for_update()
+    )
+    locked_user = lock_result.scalar_one()
+    if locked_user.credits_balance < credits_cost:
         raise AppError(ErrorCode.BILLING_INSUFFICIENT_CREDITS)
 
     # 组装输入快照
@@ -67,7 +73,7 @@ async def create_task(req: CreateTaskRequest, user: User = Depends(get_current_u
     idem_key = f"gen:{user.id}:{uuid.uuid4().hex}"
 
     # 冻结积分 + 创建任务 + Outbox（同一事务）
-    user.credits_balance -= credits_cost
+    locked_user.credits_balance -= credits_cost
     task = GenerationTask(
         user_id=user.id,
         character_id=character.id,
@@ -94,7 +100,7 @@ async def create_task(req: CreateTaskRequest, user: User = Depends(get_current_u
         "task_id": str(task.id),
         "status": task.status.value,
         "credits_cost": credits_cost,
-        "credits_balance": user.credits_balance,
+        "credits_balance": locked_user.credits_balance,
     }
 
 
@@ -140,6 +146,11 @@ async def cancel_task(task_id: uuid.UUID, user: User = Depends(get_current_user)
     if task.status not in (TaskStatus.PENDING, TaskStatus.QUEUED):
         raise AppError(ErrorCode.TASK_CANNOT_CANCEL)
     task.status = TaskStatus.CANCELLED
-    user.credits_balance += task.credits_cost  # 退回积分
+    # 退回积分时使用悲观锁防止并发修改
+    lock_result = await db.execute(
+        select(User).where(User.id == user.id).with_for_update()
+    )
+    locked_user = lock_result.scalar_one()
+    locked_user.credits_balance += task.credits_cost  # 退回积分
     await db.commit()
-    return {"ok": True, "credits_balance": user.credits_balance}
+    return {"ok": True, "credits_balance": locked_user.credits_balance}

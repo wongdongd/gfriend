@@ -1,4 +1,9 @@
-/** API 客户端：封装 fetch、认证令牌与统一错误 */
+/** API 客户端：封装 fetch、认证令牌与统一错误。
+
+认证优先级：
+1. localStorage access_token（向后兼容，已在迁移中）
+2. httpOnly cookie（后端自动附带，由 setTokenCookies 设置后生效）
+*/
 
 const API_BASE = '/api';
 
@@ -21,11 +26,13 @@ export class ApiError extends Error {
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
+  // 如果前端仍使用 localStorage token 兼容旧版，保留读取
   return localStorage.getItem('access_token');
 }
 
 export function setTokens(access: string, refresh: string) {
   if (typeof window === 'undefined') return;
+  // 同时存储在 localStorage（降级兼容）—— 后端已通过 httpOnly cookie 下发
   localStorage.setItem('access_token', access);
   localStorage.setItem('refresh_token', refresh);
 }
@@ -38,12 +45,13 @@ export function clearTokens() {
 
 async function tryRefresh(): Promise<boolean> {
   const refresh = localStorage.getItem('refresh_token');
-  if (!refresh) return false;
+  // cookie 中的 refresh_token 也会由浏览器自动附带
   try {
     const res = await fetch(`${API_BASE}/auth/refresh`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refresh }),
+      headers: refresh ? { 'Content-Type': 'application/json' } : {},
+      body: refresh ? JSON.stringify({ refresh_token: refresh }) : undefined,
+      credentials: 'include',
     });
     if (!res.ok) return false;
     const data = await res.json();
@@ -64,7 +72,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include',  // 附带 httpOnly cookie
+  });
 
   if (res.status === 401) {
     if (!NO_REFRESH_PATHS.has(path)) {
@@ -121,6 +133,7 @@ export const api = {
       method: 'PUT',
       headers: { 'Content-Type': file.type },
       body: file,
+      credentials: 'omit',  // 直传对象存储，不需要 cookie
     });
     // 3. 确认上传，创建 Asset 记录
     const confirm = await request<{ id: string; object_key: string }>('/assets/confirm', {
@@ -170,6 +183,7 @@ export const api = {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(body),
+        credentials: 'include',  // 附带 httpOnly cookie
       });
 
       // 401 时尝试刷新 token 后重试一次

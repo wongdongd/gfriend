@@ -12,10 +12,10 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from db.base import Base, TimestampMixin, UUIDPrimaryKey
+from db.base import Base, SoftDeleteMixin, TimestampMixin, UUIDPrimaryKey
 
 if TYPE_CHECKING:
     from db.models.character import Character
@@ -38,7 +38,7 @@ class UserRole(str, enum.Enum):
     OPERATOR = "operator"  # 运营
 
 
-class User(Base, UUIDPrimaryKey, TimestampMixin):
+class User(Base, UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin):
     """用户主表，全业务主键。"""
 
     __tablename__ = "users"
@@ -65,8 +65,8 @@ class User(Base, UUIDPrimaryKey, TimestampMixin):
         nullable=False,
     )
 
-    # 通知偏好（JSON 字符串：push_frequency, proactive_message_enabled 等）
-    notification_prefs: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # 通知偏好（JSON：push_frequency, proactive_message_enabled 等）
+    notification_prefs: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # 订阅权益快照（冗余，便于快速读取；以 Subscription 为准）
     subscription_tier: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
@@ -74,8 +74,6 @@ class User(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 账户状态
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # 关系
     auth_identities: Mapped[list["AuthIdentity"]] = relationship(

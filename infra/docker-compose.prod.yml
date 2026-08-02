@@ -4,6 +4,8 @@
 #
 # 注意：API 容器已内置 Celery Worker（entrypoint.sh 同时启动两者），
 # 无需单独的 worker 服务。如需独立扩展 Worker，取消下方注释即可。
+#
+# 安全：生产环境不暴露数据库端口到宿主机，仅在 docker 网络内互通。
 
 version: "3.9"
 
@@ -11,9 +13,10 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     restart: always
+    # 生产环境不暴露端口到宿主机
     environment:
       POSTGRES_USER: ${DB_USER:-companion}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME:-companion}
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -26,6 +29,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
+    # 生产环境不暴露端口到宿主机
     volumes:
       - redis-data:/data
     healthcheck:
@@ -40,8 +44,8 @@ services:
       dockerfile: infra/docker/backend.Dockerfile
     restart: always
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-companion}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-companion}
-      - DATABASE_SYNC_URL=postgresql://${DB_USER:-companion}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-companion}
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-companion}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-companion}
+      - DATABASE_SYNC_URL=postgresql://${DB_USER:-companion}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-companion}
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
@@ -74,9 +78,8 @@ services:
   #   entrypoint: ["python", "main.py", "worker"]
   #   working_dir: /app
   #   environment:
-  #     - CELERY_QUEENS=image,video,safety,celery
-  #   environment:
-  #     - DATABASE_URL=postgresql+asyncpg://${DB_USER:-companion}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-companion}
+  #     - CELERY_QUEUES=image,video,safety,celery
+  #     - DATABASE_URL=postgresql+asyncpg://${DB_USER:-companion}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-companion}
   #     - REDIS_URL=redis://redis:6379/0
   #     - CELERY_BROKER_URL=redis://redis:6379/1
   #     - CELERY_RESULT_BACKEND=redis://redis:6379/2

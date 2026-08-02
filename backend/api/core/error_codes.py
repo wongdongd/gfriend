@@ -44,6 +44,7 @@ class ErrorCode(StrEnum):
     BILLING_SUBSCRIPTION_NOT_FOUND = "BILLING_SUBSCRIPTION_NOT_FOUND"
     BILLING_UNSUPPORTED_CHANNEL = "BILLING_UNSUPPORTED_CHANNEL"
     BILLING_SIGNATURE_FAILED = "BILLING_SIGNATURE_FAILED"
+    BILLING_CHECKOUT_FAILED = "BILLING_CHECKOUT_FAILED"
     ASSET_BLOCKED = "ASSET_BLOCKED"
 
 
@@ -73,6 +74,7 @@ ERROR_DEFINITIONS: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.BILLING_SUBSCRIPTION_NOT_FOUND: (404, "Subscription not found"),
     ErrorCode.BILLING_UNSUPPORTED_CHANNEL: (400, "Unsupported payment channel"),
     ErrorCode.BILLING_SIGNATURE_FAILED: (400, "Payment signature verification failed: {reason}"),
+    ErrorCode.BILLING_CHECKOUT_FAILED: (502, "Payment provider checkout creation failed: {reason}"),
     ErrorCode.ASSET_BLOCKED: (403, "This asset has been blocked"),
 }
 

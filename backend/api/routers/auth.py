@@ -1,9 +1,12 @@
-﻿"""认证路由：邮箱注册/登录、OAuth 提供商、令牌刷新。"""
+﻿"""认证路由：邮箱注册/登录、OAuth 提供商、令牌刷新、登出。
+
+Token 通过 httpOnly cookie 下发，同时也支持 Authorization header（兼容旧客户端）。
+"""
 from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,12 +18,48 @@ from api.core.security import (
     create_refresh_token,
     decode_token,
     hash_password,
+    is_refresh_token_valid,
+    revoke_refresh_token,
+    store_refresh_token,
     verify_password,
 )
 from db.models.user import AgeStatus, AuthIdentity, AuthProvider, User
+from shared.config import settings
 from shared.database import get_db
 
 router = APIRouter()
+
+
+def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
+    """将 token 写入 httpOnly Secure SameSite cookie。"""
+    secure = settings.app_env != "development"
+    access_max_age = settings.jwt_access_expire_minutes * 60
+    refresh_max_age = settings.jwt_refresh_expire_days * 86400
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=access_max_age,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        path="/",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        max_age=refresh_max_age,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        path="/api/auth/refresh",
+    )
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    """清除认证 cookie。"""
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/api/auth/refresh")
 
 
 class RegisterRequest(BaseModel):
@@ -63,7 +102,7 @@ async def list_providers():
 
 
 @router.post("/register", response_model=TokenResponse)
-async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
+async def register(req: RegisterRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """邮箱注册。"""
     existing = await db.execute(select(User).where(User.email == req.email))
     if existing.scalar_one_or_none():
@@ -73,12 +112,17 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     await db.flush()
     identity = AuthIdentity(user_id=user.id, provider=AuthProvider.EMAIL, provider_account_id=req.email, provider_email=req.email)
     db.add(identity)
+    await db.flush()
+    access_token = create_access_token(user.id)
+    refresh_token, jti = create_refresh_token(user.id)
+    await store_refresh_token(str(user.id), jti)
     await db.commit()
-    return TokenResponse(access_token=create_access_token(user.id), refresh_token=create_refresh_token(user.id), user_id=str(user.id))
+    _set_auth_cookies(response, access_token, refresh_token)
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token, user_id=str(user.id))
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(req: LoginRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """邮箱登录。"""
     result = await db.execute(select(User).where(User.email == req.email))
     user = result.scalar_one_or_none()
@@ -86,21 +130,55 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise AppError(ErrorCode.AUTH_INVALID_CREDENTIALS)
     if not user.is_active or user.is_deleted:
         raise AppError(ErrorCode.AUTH_ACCOUNT_DISABLED)
-    return TokenResponse(access_token=create_access_token(user.id), refresh_token=create_refresh_token(user.id), user_id=str(user.id))
+    access_token = create_access_token(user.id)
+    refresh_token, jti = create_refresh_token(user.id)
+    await store_refresh_token(str(user.id), jti)
+    _set_auth_cookies(response, access_token, refresh_token)
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token, user_id=str(user.id))
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(req: RefreshRequest, db: AsyncSession = Depends(get_db)):
-    """刷新访问令牌。"""
+async def refresh_token(req: RefreshRequest, response: Response, db: AsyncSession = Depends(get_db)):
+    """刷新访问令牌。
+
+    校验 token 签名 + Redis 中是否仍有效（未被吊销），然后轮换 refresh token。
+    """
     payload = decode_token(req.refresh_token)
     if payload is None or payload.get("type") != "refresh":
         raise AppError(ErrorCode.AUTH_REFRESH_INVALID)
-    user_id = uuid.UUID(payload["sub"])
-    result = await db.execute(select(User).where(User.id == user_id))
+    user_id = payload["sub"]
+    jti = payload.get("jti", "")
+
+    # 检查 Redis 中的有效性
+    if not await is_refresh_token_valid(user_id, jti):
+        raise AppError(ErrorCode.AUTH_REFRESH_INVALID)
+
+    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
     user = result.scalar_one_or_none()
     if not user or not user.is_active:
         raise AppError(ErrorCode.AUTH_USER_INVALID)
-    return TokenResponse(access_token=create_access_token(user.id), refresh_token=create_refresh_token(user.id), user_id=str(user.id))
+
+    # 吊销旧 token，签发新 token（refresh token rotation）
+    await revoke_refresh_token(user_id, jti)
+    access_token = create_access_token(user.id)
+    new_refresh_token, new_jti = create_refresh_token(user.id)
+    await store_refresh_token(str(user.id), new_jti)
+
+    _set_auth_cookies(response, access_token, new_refresh_token)
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=new_refresh_token,
+        user_id=str(user.id),
+    )
+
+
+@router.post("/logout")
+async def logout(response: Response, user: User = Depends(get_current_user)):
+    """登出：吊销当前用户所有 refresh token + 清除 cookie。"""
+    await revoke_refresh_token(str(user.id))
+    _clear_auth_cookies(response)
+    return {"ok": True}
 
 
 @router.post("/age-confirm")

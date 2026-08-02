@@ -83,7 +83,7 @@ async def create_checkout(req: CheckoutRequest, user: User = Depends(get_current
         result = await adapter.create_checkout(checkout_req)
     except Exception as e:
         await db.rollback()
-        raise AppError(ErrorCode.UNKNOWN, {"reason": str(e)})
+        raise AppError(ErrorCode.BILLING_CHECKOUT_FAILED, {"reason": str(e)})
     order.provider_checkout_id = result.checkout_id
     await db.commit()
 
@@ -150,7 +150,9 @@ async def payment_webhook(provider: str, request: Request, db: AsyncSession = De
                 order.provider_event_id = result.event_id
                 # 积分包：发放积分
                 if order.type == OrderType.CREDITS and order.credits_amount:
-                    user_result = await db.execute(select(User).where(User.id == user_id))
+                    user_result = await db.execute(
+                        select(User).where(User.id == user_id).with_for_update()
+                    )
                     u = user_result.scalar_one_or_none()
                     if u:
                         u.credits_balance += order.credits_amount

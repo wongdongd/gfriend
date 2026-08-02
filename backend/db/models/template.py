@@ -8,7 +8,7 @@ from __future__ import annotations
 import enum
 from typing import Optional
 
-from sqlalchemy import Boolean, Enum, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Enum, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from db.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -41,7 +41,7 @@ class Template(Base, UUIDPrimaryKey, TimestampMixin):
     # 模板唯一标识（如 "relationship.friend"、"style.cinematic"）
     code: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
 
-    display_config: Mapped[str] = mapped_column(Text, nullable=False, comment="JSON: 名称/描述/图标/预览图")
+    display_config: Mapped[dict] = mapped_column(JSON, nullable=False, comment="名称/描述/图标/预览图")
     prompt_snippet: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # 视觉缩略图 URL（场景/风格模板用）
     preview_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy import Boolean, Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from db.base import Base, TimestampMixin, UUIDPrimaryKey
+from db.base import Base, SoftDeleteMixin, TimestampMixin, UUIDPrimaryKey
 from db.models.conversation import SafetyStatus
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ class AssetSource(str, enum.Enum):
     SYSTEM = "system"
 
 
-class Asset(Base, UUIDPrimaryKey, TimestampMixin):
+class Asset(Base, UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin):
     """媒体素材/作品。存储于 S3 兼容对象存储，通过签名 URL 访问。
 
     - ``object_key``：对象存储键（不保存完整 URL，签名 URL 临时生成）。
@@ -98,8 +98,6 @@ class Asset(Base, UUIDPrimaryKey, TimestampMixin):
 
     # 元数据（JSON：如生成参数、模型版本等）
     metadata_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     character: Mapped[Optional["Character"]] = relationship(
         "Character", back_populates="assets", foreign_keys="Asset.character_id"

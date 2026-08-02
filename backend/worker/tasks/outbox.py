@@ -5,22 +5,13 @@
 """
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
-from typing import Any
 
 from worker.celery_app import app
+from shared.async_runner import run_async
 
 logger = logging.getLogger(__name__)
-
-
-def _run_async(coro: Any) -> Any:
-    loop = asyncio.new_event_loop()
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
 
 
 @app.task(name="worker.tasks.outbox.process_pending", bind=True)
@@ -29,7 +20,7 @@ def process_pending(self, batch_size: int = 100) -> dict:
 
     应由定时任务（Celery Beat）周期性调用。
     """
-    return _run_async(_process_outbox(batch_size))
+    return run_async(_process_outbox(batch_size))
 
 
 async def _process_outbox(batch_size: int) -> dict:

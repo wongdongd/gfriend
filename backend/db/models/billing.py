@@ -13,7 +13,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -72,6 +72,11 @@ class CreditLedger(Base, UUIDPrimaryKey, TimestampMixin):
     note: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     user: Mapped["User"] = relationship("User", back_populates="credit_ledger")
+
+    __table_args__ = (
+        # 用户积分流水查询（最常用：按用户 + 时间倒序）
+        Index("ix_credit_ledger_user_created", "user_id", "created_at"),
+    )
 
 
 class OrderType(str, enum.Enum):
@@ -173,7 +178,7 @@ class Subscription(Base, UUIDPrimaryKey, TimestampMixin):
     # 套餐标识（free / companion / pro）
     tier: Mapped[str] = mapped_column(String(32), nullable=False)
     # 权益快照（JSON：角色数上限、对话额度、记忆容量、图片额度等）
-    entitlements: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    entitlements: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # 周期
     current_period_start: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

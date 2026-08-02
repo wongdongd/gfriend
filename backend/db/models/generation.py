@@ -14,7 +14,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -124,6 +124,11 @@ class GenerationTask(Base, UUIDPrimaryKey, TimestampMixin):
 
     character: Mapped["Character"] = relationship("Character", back_populates="generation_tasks")
 
+    __table_args__ = (
+        # Worker 按状态 + 优先级拉取待处理任务
+        Index("ix_gen_tasks_status_priority", "status", "priority"),
+    )
+
 
 class OutboxEvent(Base, UUIDPrimaryKey, TimestampMixin):
     """Outbox 模式：保证数据库事务与队列投递的一致性。
@@ -144,3 +149,8 @@ class OutboxEvent(Base, UUIDPrimaryKey, TimestampMixin):
     is_published: Mapped[bool] = mapped_column(default=False, nullable=False)
     published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    __table_args__ = (
+        # Outbox 扫描器按 (is_published, created_at) 拉取未投递事件
+        Index("ix_outbox_pending", "is_published", "created_at"),
+    )

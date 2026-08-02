@@ -8,37 +8,27 @@
 """
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
-from typing import Any
 
 from worker.celery_app import app
+from shared.async_runner import run_async
 
 logger = logging.getLogger(__name__)
-
-
-def _run_async(coro: Any) -> Any:
-    """在同步 Celery 任务中运行异步函数。"""
-    loop = asyncio.new_event_loop()
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
 
 
 @app.task(name="worker.tasks.generation.generate_image", bind=True, max_retries=3)
 def generate_image(self, task_id: str) -> dict:
     """图片生成任务。"""
     logger.info("开始图片生成任务: %s", task_id)
-    return _run_async(_generate(task_id, kind="image"))
+    return run_async(_generate(task_id, kind="image"))
 
 
 @app.task(name="worker.tasks.generation.generate_video", bind=True, max_retries=2)
 def generate_video(self, task_id: str) -> dict:
     """视频生成任务（低并发，按套餐优先级）。"""
     logger.info("开始视频生成任务: %s", task_id)
-    return _run_async(_generate(task_id, kind="video"))
+    return run_async(_generate(task_id, kind="video"))
 
 
 async def _generate(task_id: str, kind: str) -> dict:
@@ -140,14 +130,21 @@ async def _generate(task_id: str, kind: str) -> dict:
             )
             db.add(work)
 
-            # 确认扣费
+            # 确认扣费（悲观锁读取最新余额）
             task.status = TaskStatus.SUCCESS
             task.result_asset_id = asset.id
+
+            user_result = await db.execute(
+                select(User).where(User.id == task.user_id).with_for_update()
+            )
+            u = user_result.scalar_one_or_none()
+            balance_after = u.credits_balance if u else 0
+
             ledger = CreditLedger(
                 user_id=task.user_id,
                 type=CreditEntryType.CONSUME,
                 amount=-task.credits_cost,
-                balance_after=0,  # 实际应查询用户当前余额
+                balance_after=balance_after,
                 related_task_id=task.id,
                 idempotency_key=f"consume:{task.id}",
             )
@@ -160,8 +157,10 @@ async def _generate(task_id: str, kind: str) -> dict:
             logger.exception("生成任务失败: %s", task_id)
             task.status = TaskStatus.FAILED
             task.error_message = str(e)
-            # 退回积分
-            user_result = await db.execute(select(User).where(User.id == task.user_id))
+            # 退回积分（悲观锁）
+            user_result = await db.execute(
+                select(User).where(User.id == task.user_id).with_for_update()
+            )
             u = user_result.scalar_one_or_none()
             if u:
                 u.credits_balance += task.credits_cost

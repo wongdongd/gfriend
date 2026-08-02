@@ -12,7 +12,7 @@ import enum
 import uuid
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -77,7 +77,7 @@ class Memory(Base, UUIDPrimaryKey, TimestampMixin):
     # 记忆内容摘要（用户可读、可编辑）
     content: Mapped[str] = mapped_column(Text, nullable=False)
     # 结构化详情（JSON：日期、人物、地点等）
-    detail: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    detail: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     type: Mapped[MemoryType] = mapped_column(
         Enum(MemoryType, name="memory_type", values_callable=lambda obj: [e.value for e in obj]),
@@ -104,7 +104,7 @@ class Memory(Base, UUIDPrimaryKey, TimestampMixin):
     )
 
     # 可用范围（JSON：起始/结束时间、适用场景；空表示全局可用）
-    scope: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    scope: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # 用户确认/编辑审计
     confirmed_at: Mapped[Optional[object]] = mapped_column(

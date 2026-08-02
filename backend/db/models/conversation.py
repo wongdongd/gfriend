@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, JSON
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -66,13 +66,18 @@ class Conversation(Base, UUIDPrimaryKey, TimestampMixin):
 
     title: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     # 快捷话题标记（JSON 数组：早安、分享今天、倾诉烦恼...）
-    quick_topics: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    quick_topics: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     last_message_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     character: Mapped["Character"] = relationship("Character", back_populates="conversations")
     messages: Mapped[list["Message"]] = relationship(
         "Message", back_populates="conversation", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        # 按角色 + 最后消息时间倒序查询最近会话
+        Index("ix_conversations_char_lastmsg", "character_id", "last_message_at"),
     )
 
 
@@ -127,3 +132,8 @@ class Message(Base, UUIDPrimaryKey, TimestampMixin):
     completion_tokens: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     conversation: Mapped["Conversation"] = relationship("Conversation", back_populates="messages")
+
+    __table_args__ = (
+        # 按会话 + 创建时间倒序查询消息历史（最常用查询模式）
+        Index("ix_messages_conversation_created", "conversation_id", "created_at"),
+    )

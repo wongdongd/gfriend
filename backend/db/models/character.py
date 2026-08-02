@@ -10,7 +10,7 @@ import enum
 import uuid
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, Enum, ForeignKey, String, Text
+from sqlalchemy import JSON, Boolean, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -71,10 +71,10 @@ class Character(Base, UUIDPrimaryKey, TimestampMixin):
     )
 
     # 互动边界（JSON：允许/禁止的话题、主动消息频率等）
-    interaction_bounds: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    interaction_bounds: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # 模型参数快照（温度、top_p 等；JSON）
-    model_params: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    model_params: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # 状态
     status: Mapped[CharacterStatus] = mapped_column(

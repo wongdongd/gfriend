@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { useAuth } from '@/lib/auth-context';
@@ -29,6 +29,8 @@ export default function ChatPage() {
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [referenceImages, setReferenceImages] = useState<ReferenceImage[]>([]);
+  // 追踪活跃的 polling timers，用于组件卸载时清理
+  const pollTimersRef = useRef<Set<ReturnType<typeof setInterval>>>(new Set());
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
@@ -43,6 +45,15 @@ export default function ChatPage() {
       });
     }
   }, [user]);
+
+  // 组件卸载时清理所有活跃的轮询 timer
+  useEffect(() => {
+    const timers = pollTimersRef.current;
+    return () => {
+      timers.forEach((t) => clearInterval(t));
+      timers.clear();
+    };
+  }, []);
 
   const selectCharacter = async (c: Character) => {
     setCurrent(c);
@@ -77,22 +88,30 @@ export default function ChatPage() {
       let accumulated = '';
       const replyId = `reply-${Date.now()}`;
       setStreamingId(replyId);
+      // SSE 流式渲染优化：用 ref 累积内容，按帧（~16ms）批量更新 state，
+      // 避免每个 token 触发一次完整 MessageList 重渲染。
+      let lastUpdate = 0;
+      const BATCH_MS = 40; // 约 25 fps，对文本流绰绰有余
       const doneData = await api.stream(
         `/conversations/${current!.id}/messages`,
         { content, attachment_ids: attachmentIds },
         (token) => {
           accumulated += token;
+          const now = Date.now();
+          if (now - lastUpdate < BATCH_MS) return; // 跳过，等下一帧
+          lastUpdate = now;
+          const snapshot = accumulated;
           setMessages((prev) => {
             const exists = prev.some((m) => m.id === replyId);
             if (exists) {
-              return prev.map((m) => (m.id === replyId ? { ...m, content: accumulated } : m));
+              return prev.map((m) => (m.id === replyId ? { ...m, content: snapshot } : m));
             }
             return [
               ...prev,
               {
                 id: replyId,
                 role: 'assistant',
-                content: accumulated,
+                content: snapshot,
                 feedback: 'none',
                 created_at: new Date().toISOString(),
               },
@@ -100,6 +119,23 @@ export default function ChatPage() {
           });
         },
       );
+      // 流结束后写入最终完整内容
+      setMessages((prev) => {
+        const exists = prev.some((m) => m.id === replyId);
+        if (exists) {
+          return prev.map((m) => (m.id === replyId ? { ...m, content: accumulated } : m));
+        }
+        return [
+          ...prev,
+          {
+            id: replyId,
+            role: 'assistant',
+            content: accumulated,
+            feedback: 'none',
+            created_at: new Date().toISOString(),
+          },
+        ];
+      });
       const messageId = (doneData.message_id as string) || replyId;
       setMessages((prev) => prev.map((m) => (m.id === replyId ? { ...m, id: messageId } : m)));
     } catch (err) {
@@ -163,8 +199,12 @@ export default function ChatPage() {
               : m,
           ),
         );
-        if (status === 'done' || status === 'failed') clearInterval(timer);
+        if (status === 'done' || status === 'failed') {
+          pollTimersRef.current.delete(timer);
+          clearInterval(timer);
+        }
       }, 1500);
+      pollTimersRef.current.add(timer);
     } catch {
       // 忽略生成失败
     }

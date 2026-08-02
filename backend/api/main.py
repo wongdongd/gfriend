@@ -47,6 +47,10 @@ async def lifespan(app: FastAPI):
 
     await engine.dispose()
 
+    from shared.redis import close_redis
+
+    await close_redis()
+
 
 app = FastAPI(
     title="AI 人物陪伴平台 API",
@@ -139,19 +143,49 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
     @staticmethod
     def _safe_body(body_bytes: bytes) -> str:
-        """安全展示请求体：空返回 '-'，非文本返回 '<binary %d bytes>'，过长截断。"""
+        """安全展示请求体：空返回 '-'，非文本返回 '<binary %d bytes>'，过长截断。
+        同时过滤敏感字段（password、token、secret 等），防止泄露到日志。
+        """
         if not body_bytes:
             return "-"
         try:
             text = body_bytes.decode("utf-8")
         except UnicodeDecodeError:
             return f"<binary {len(body_bytes)} bytes>"
+        # 过滤敏感字段
+        import json
+
+        try:
+            data = json.loads(text)
+            if isinstance(data, dict):
+                for key in list(data.keys()):
+                    lower = key.lower()
+                    if any(
+                        s in lower
+                        for s in (
+                            "password",
+                            "token",
+                            "secret",
+                            "api_key",
+                            "access_token",
+                            "refresh_token",
+                        )
+                    ):
+                        data[key] = "***"
+                text = json.dumps(data, ensure_ascii=False)
+        except (json.JSONDecodeError, TypeError):
+            pass  # 非 JSON，保持原样
         if len(text) > 1000:
             text = text[:1000] + f"...<truncated {len(text) - 1000} chars>"
         return text
 
 
 app.add_middleware(RequestLoggingMiddleware)
+
+# 限流中间件（基于 Redis 滑动窗口；Redis 不可用时自动放行）
+from api.core.rate_limit import RateLimitMiddleware
+
+app.add_middleware(RateLimitMiddleware, max_requests=settings.rate_limit_per_minute, window_seconds=60)
 
 # 注册路由
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])

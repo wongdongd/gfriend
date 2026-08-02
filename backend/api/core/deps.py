@@ -1,9 +1,14 @@
-﻿"""FastAPI 依赖注入：当前用户、数据库会话、管理员校验。"""
+﻿"""FastAPI 依赖注入：当前用户、数据库会话、管理员校验。
+
+认证支持两种方式（优先级从高到低）：
+1. Authorization: Bearer <token> header
+2. access_token httpOnly cookie
+"""
 from __future__ import annotations
 
 import uuid
 
-from fastapi import Depends, status
+from fastapi import Cookie, Depends, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,14 +21,28 @@ from shared.database import get_db
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-async def get_current_user(
+async def _get_token(
+    request: Request,
     creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    access_token_cookie: str | None = Cookie(default=None, alias="access_token"),
+) -> str | None:
+    """提取 token：优先从 Authorization header，其次从 httpOnly cookie。"""
+    if creds is not None and creds.scheme.lower() == "bearer":
+        return creds.credentials
+    return access_token_cookie
+
+
+async def get_current_user(
+    request: Request,
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    access_token_cookie: str | None = Cookie(default=None, alias="access_token"),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """从 Bearer 令牌解析当前用户。"""
-    if creds is None or creds.scheme.lower() != "bearer":
+    """从 Bearer 令牌或 cookie 解析当前用户。"""
+    token = await _get_token(request, creds, access_token_cookie)
+    if token is None:
         raise AppError(ErrorCode.AUTH_TOKEN_MISSING)
-    payload = decode_token(creds.credentials)
+    payload = decode_token(token)
     if payload is None or payload.get("type") != "access":
         raise AppError(ErrorCode.AUTH_TOKEN_INVALID)
     user_id = payload.get("sub")
