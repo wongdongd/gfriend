@@ -197,7 +197,6 @@ export default function ChatPage() {
                     ...(m.generation as GenerationState),
                     status,
                     url: g.url,
-                    progress: g.progress,
                   },
                 }
               : m,
