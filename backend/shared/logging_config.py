@@ -23,6 +23,19 @@ from pathlib import Path
 
 _LOG_CONFIGURED = False
 
+_ROLES = ("api", "worker", "beat", "migrate")
+
+
+def _log_role() -> str:
+    """推断当前进程角色：APP_ROLE 优先，其次命令行参数，默认 api。"""
+    role = os.getenv("APP_ROLE", "")
+    if role in _ROLES:
+        return role
+    for arg in sys.argv[1:]:
+        if arg in _ROLES:
+            return arg
+    return "api"
+
 
 def _formatter() -> logging.Formatter:
     return logging.Formatter(
@@ -31,7 +44,7 @@ def _formatter() -> logging.Formatter:
     )
 
 
-def _try_make_file_handler(log_dir: Path) -> TimedRotatingFileHandler | None:
+def _try_make_file_handler(log_dir: Path, role: str) -> TimedRotatingFileHandler | None:
     """尝试创建文件 handler；失败返回 None（应用仍可只用控制台日志继续运行）。"""
     try:
         log_dir.mkdir(parents=True, exist_ok=True)
@@ -50,7 +63,7 @@ def _try_make_file_handler(log_dir: Path) -> TimedRotatingFileHandler | None:
 
     try:
         handler = TimedRotatingFileHandler(
-            filename=str(log_dir / "backend.log"),
+            filename=str(log_dir / f"{role}.log"),
             when=when,
             interval=1,
             backupCount=backup,
@@ -129,17 +142,18 @@ def setup_logging() -> None:
 
     # 文件 handler（按时间滚动，失败则跳过）
     log_dir = _log_dir()
-    file_handler = _try_make_file_handler(log_dir)
+    role = _log_role()
+    file_handler = _try_make_file_handler(log_dir, role)
     if file_handler is not None:
         root.addHandler(file_handler)
-        root.info("日志已初始化 -> 文件: %s + 控制台", log_dir / "backend.log")
+        root.info("日志已初始化 -> 文件: %s + 控制台", log_dir / f"{role}.log")
     else:
         # 回退：尝试本地 ./logs 目录
         fallback_dir = Path("logs")
-        file_handler = _try_make_file_handler(fallback_dir)
+        file_handler = _try_make_file_handler(fallback_dir, role)
         if file_handler is not None:
             root.addHandler(file_handler)
-            root.info("日志已初始化 -> 文件: %s + 控制台（回退目录）", fallback_dir / "backend.log")
+            root.info("日志已初始化 -> 文件: %s + 控制台（回退目录）", fallback_dir / f"{role}.log")
         else:
             root.info("日志已初始化 -> 仅控制台输出（文件不可写）")
 

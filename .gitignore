@@ -74,3 +74,6 @@ logs/
 
 # 核心转储
 core.*
+/backend/celerybeat-schedule.bak
+/backend/celerybeat-schedule.dat
+/backend/celerybeat-schedule.dir
