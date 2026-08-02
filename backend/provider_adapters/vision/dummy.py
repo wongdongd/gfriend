@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import asyncio
-import io
 import struct
 import uuid
 import zlib
@@ -27,10 +26,10 @@ def _make_png(width: int, height: int, prompt: str) -> bytes:
     """
     seed = abs(hash(prompt)) % 360
     # HSL → RGB 简化：取三个色相点做渐变
-    def hsl_to_rgb(h: int, s: float, l: float) -> tuple[int, int, int]:
-        c = (1 - abs(2 * l - 1)) * s
+    def hsl_to_rgb(h: int, s: float, lightness: float) -> tuple[int, int, int]:
+        c = (1 - abs(2 * lightness - 1)) * s
         x = c * (1 - abs((h / 60) % 2 - 1))
-        m = l - c / 2
+        m = lightness - c / 2
         if h < 60:
             r, g, b = c, x, 0
         elif h < 120:

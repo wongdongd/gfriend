@@ -1,9 +1,12 @@
 ﻿"""Dummy LLM 适配器（本地开发与测试用，无需真实 API key）。"""
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING
 
 from provider_adapters.llm.base import LLMAdapter, LLMRequest, LLMResponse, LLMUsage
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 class DummyLLMAdapter(LLMAdapter):

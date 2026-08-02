@@ -6,14 +6,14 @@
 from __future__ import annotations
 
 import os
-from logging.config import fileConfig
-
-from alembic import context
-from sqlalchemy import engine_from_config, pool
 
 # 确保 backend/（项目根）在 sys.path 中，使 shared/db 等成为顶层可导入包
 import sys
+from logging.config import fileConfig
 from pathlib import Path
+
+from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 

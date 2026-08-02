@@ -9,7 +9,6 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -51,24 +50,24 @@ class SafetyEvent(Base, UUIDPrimaryKey, TimestampMixin):
     __tablename__ = "safety_events"
 
     # 关联实体（任一）
-    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
         index=True,
         nullable=True,
     )
-    character_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    character_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("characters.id", ondelete="SET NULL"),
         nullable=True,
     )
-    message_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    message_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("messages.id", ondelete="SET NULL"),
         nullable=True,
     )
-    asset_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    asset_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("assets.id", ondelete="SET NULL"),
         nullable=True,
     )
-    generation_task_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    generation_task_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("generation_tasks.id", ondelete="SET NULL"),
         nullable=True,
     )
@@ -83,16 +82,16 @@ class SafetyEvent(Base, UUIDPrimaryKey, TimestampMixin):
     # 触发来源（auto / report）
     source: Mapped[str] = mapped_column(String(16), default="auto", nullable=False)
     # 举报人（source=report 时有效）
-    reporter_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    reporter_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
 
     # 策略版本
-    policy_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    policy_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     # 事件详情（JSON：模型返回的原始结果、命中的规则等）
-    detail: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    detail: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # 处置
     disposition: Mapped[DispositionStatus] = mapped_column(
@@ -101,10 +100,10 @@ class SafetyEvent(Base, UUIDPrimaryKey, TimestampMixin):
         nullable=False,
     )
     # 处置动作（JSON：block_message / freeze_user / refund_credits 等）
-    action_taken: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    handled_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+    action_taken: Mapped[str | None] = mapped_column(Text, nullable=True)
+    handled_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    handled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)

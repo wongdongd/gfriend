@@ -11,8 +11,9 @@ from __future__ import annotations
 import json
 import logging
 
-from worker.celery_app import app
 from shared.async_runner import run_async
+
+from worker.celery_app import app
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +40,13 @@ async def _generate(task_id: str, kind: str) -> dict:
     """
     import uuid
 
-    from sqlalchemy import select
-    from sqlalchemy.ext.asyncio import AsyncSession
-
     from db.models.billing import CreditEntryType, CreditLedger
-    from db.models.generation import GenerationTask, TaskStatus, TaskType
+    from db.models.generation import GenerationTask, TaskStatus
     from db.models.user import User
     from provider_adapters.vision import get_image_adapter, get_video_adapter
     from provider_adapters.vision.base import TaskKind, VisionRequest
     from shared.database import async_session_factory
+    from sqlalchemy import select
 
     task_uuid = uuid.UUID(task_id)
 

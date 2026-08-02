@@ -2,17 +2,16 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional
 
-from fastapi import APIRouter, Depends, status
+from db.models.user import User
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from shared.config import settings
+from shared.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.core.deps import get_current_user
 from api.core.error_codes import AppError, ErrorCode
-from db.models.user import User
-from shared.config import settings
-from shared.database import get_db
 
 router = APIRouter()
 
@@ -20,7 +19,7 @@ router = APIRouter()
 class UploadUrlRequest(BaseModel):
     filename: str
     content_type: str
-    character_id: Optional[str] = None
+    character_id: str | None = None
 
 
 @router.post("/upload-url")
@@ -38,8 +37,8 @@ async def create_upload_url(req: UploadUrlRequest, user: User = Depends(get_curr
 class AssetConfirmRequest(BaseModel):
     object_key: str
     content_type: str
-    size_bytes: Optional[int] = None
-    character_id: Optional[str] = None
+    size_bytes: int | None = None
+    character_id: str | None = None
 
 
 @router.post("/confirm")

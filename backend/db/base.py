@@ -7,8 +7,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
-from typing import Optional
+from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -54,11 +53,11 @@ class SoftDeleteMixin:
     """
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+    deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
     def soft_delete(self) -> None:
         """标记为已删除（设置时间戳）。"""
         self.is_deleted = True
-        self.deleted_at = datetime.now(tz=datetime.timezone.utc)
+        self.deleted_at = datetime.now(tz=UTC)

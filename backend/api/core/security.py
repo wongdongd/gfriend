@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from jose import jwt
 from passlib.context import CryptContext
-
 from shared.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -22,7 +21,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_access_token(subject: str | uuid.UUID, extra: dict | None = None) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_access_expire_minutes)
+    expire = datetime.now(UTC) + timedelta(minutes=settings.jwt_access_expire_minutes)
     payload: dict[str, Any] = {"sub": str(subject), "exp": expire, "type": "access"}
     if extra:
         payload.update(extra)
@@ -34,7 +33,7 @@ def create_refresh_token(subject: str | uuid.UUID) -> tuple[str, str]:
 
     jti（JWT ID）存储在 Redis 中，支持主动吊销。
     """
-    expire = datetime.now(timezone.utc) + timedelta(days=settings.jwt_refresh_expire_days)
+    expire = datetime.now(UTC) + timedelta(days=settings.jwt_refresh_expire_days)
     jti = uuid.uuid4().hex
     payload = {"sub": str(subject), "exp": expire, "type": "refresh", "jti": jti}
     token = jwt.encode(payload, settings.secret_key, algorithm="HS256")

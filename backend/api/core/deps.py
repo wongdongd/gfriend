@@ -8,15 +8,15 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import Cookie, Depends, Request, status
+from db.models.user import User, UserRole
+from fastapi import Cookie, Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from shared.database import get_db
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.core.error_codes import AppError, ErrorCode
 from api.core.security import decode_token
-from db.models.user import User, UserRole
-from shared.database import get_db
 
 bearer_scheme = HTTPBearer(auto_error=False)
 

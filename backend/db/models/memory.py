@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import enum
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, Text
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -22,7 +22,6 @@ try:
     from pgvector.sqlalchemy import Vector
     _HAS_PGVECTOR = True
 except ImportError:  # pragma: no cover
-    from sqlalchemy import String as _S
     Vector = None  # type: ignore[assignment, misc]
     _HAS_PGVECTOR = False
 
@@ -31,7 +30,6 @@ EMBEDDING_DIM = 1536
 
 if TYPE_CHECKING:
     from db.models.character import Character
-    from db.models.user import User
 
 
 class MemoryType(str, enum.Enum):
@@ -77,7 +75,7 @@ class Memory(Base, UUIDPrimaryKey, TimestampMixin):
     # 记忆内容摘要（用户可读、可编辑）
     content: Mapped[str] = mapped_column(Text, nullable=False)
     # 结构化详情（JSON：日期、人物、地点等）
-    detail: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    detail: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     type: Mapped[MemoryType] = mapped_column(
         Enum(MemoryType, name="memory_type", values_callable=lambda obj: [e.value for e in obj]),
@@ -91,26 +89,26 @@ class Memory(Base, UUIDPrimaryKey, TimestampMixin):
     )
 
     # 来源消息（候选记忆的提取来源）
-    source_message_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    source_message_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("messages.id", ondelete="SET NULL"),
         nullable=True,
     )
 
     # 向量嵌入（用于相似检索）；仅 confirmed 记忆才有有效向量
-    embedding: Mapped[Optional[object]] = (
+    embedding: Mapped[object | None] = (
         mapped_column(Vector(EMBEDDING_DIM), nullable=True)
         if _HAS_PGVECTOR
         else mapped_column(Text, nullable=True)  # type: ignore[arg-type]
     )
 
     # 可用范围（JSON：起始/结束时间、适用场景；空表示全局可用）
-    scope: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    scope: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # 用户确认/编辑审计
-    confirmed_at: Mapped[Optional[object]] = mapped_column(
+    confirmed_at: Mapped[object | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
         comment="用户确认时间",
     )
 
-    character: Mapped["Character"] = relationship("Character", back_populates="memories")
+    character: Mapped[Character] = relationship("Character", back_populates="memories")

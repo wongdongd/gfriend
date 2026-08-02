@@ -15,15 +15,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
 from shared.config import settings
+from starlette.middleware.base import BaseHTTPMiddleware
 
+from api.core.error_codes import AppError
 from api.core.error_handlers import (
     app_error_handler,
     unhandled_exception_handler,
     validation_error_handler,
 )
-from api.core.error_codes import AppError
 from api.routers import (
     admin,
     assets,
@@ -183,7 +183,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 app.add_middleware(RequestLoggingMiddleware)
 
 # 限流中间件（基于 Redis 滑动窗口；Redis 不可用时自动放行）
-from api.core.rate_limit import RateLimitMiddleware
+# 有意延迟导入：确保中间件注册顺序
+from api.core.rate_limit import (  # noqa: E402
+    RateLimitMiddleware,
+)
 
 app.add_middleware(RateLimitMiddleware, max_requests=settings.rate_limit_per_minute, window_seconds=60)
 

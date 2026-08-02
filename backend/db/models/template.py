@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import enum
-from typing import Optional
 
 from sqlalchemy import JSON, Boolean, Enum, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -42,9 +41,9 @@ class Template(Base, UUIDPrimaryKey, TimestampMixin):
     code: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
 
     display_config: Mapped[dict] = mapped_column(JSON, nullable=False, comment="名称/描述/图标/预览图")
-    prompt_snippet: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    prompt_snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
     # 视觉缩略图 URL（场景/风格模板用）
-    preview_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    preview_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     policy_version: Mapped[str] = mapped_column(String(32), default="v1", nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

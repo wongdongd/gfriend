@@ -6,7 +6,7 @@
 """
 from __future__ import annotations
 
-from provider_adapters.safety import CrisisLevel, SafetyAdapter, SafetyCheckResult, SafetyVerdict
+from provider_adapters.safety import CrisisLevel, SafetyAdapter, SafetyCheckResult
 
 # 危机响应模板（不使用角色语气，直接提供求助信息），按 locale 区分热线
 CRISIS_RESPONSES: dict[str, str] = {

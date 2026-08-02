@@ -10,16 +10,26 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base, SoftDeleteMixin, TimestampMixin, UUIDPrimaryKey
 
 if TYPE_CHECKING:
-    from db.models.character import Character
     from db.models.billing import CreditLedger, Order, Subscription
+    from db.models.character import Character
 
 
 class AgeStatus(str, enum.Enum):
@@ -43,12 +53,12 @@ class User(Base, UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin):
 
     __tablename__ = "users"
 
-    email: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True, nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # 邮箱密码登录使用；OAuth 用户为空。仅存 bcrypt 哈希。
-    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    display_name: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    display_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # 年龄与合规
     age_status: Mapped[AgeStatus] = mapped_column(
@@ -56,7 +66,7 @@ class User(Base, UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin):
         default=AgeStatus.UNCONFIRMED,
         nullable=False,
     )
-    terms_accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # 角色
     role: Mapped[UserRole] = mapped_column(
@@ -66,25 +76,25 @@ class User(Base, UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin):
     )
 
     # 通知偏好（JSON：push_frequency, proactive_message_enabled 等）
-    notification_prefs: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    notification_prefs: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # 订阅权益快照（冗余，便于快速读取；以 Subscription 为准）
-    subscription_tier: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    subscription_tier: Mapped[str | None] = mapped_column(String(32), nullable=True)
     credits_balance: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # 账户状态
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # 关系
-    auth_identities: Mapped[list["AuthIdentity"]] = relationship(
+    auth_identities: Mapped[list[AuthIdentity]] = relationship(
         "AuthIdentity", back_populates="user", cascade="all, delete-orphan"
     )
-    characters: Mapped[list["Character"]] = relationship(
+    characters: Mapped[list[Character]] = relationship(
         "Character", back_populates="user", cascade="all, delete-orphan"
     )
-    orders: Mapped[list["Order"]] = relationship("Order", back_populates="user")
-    subscriptions: Mapped[list["Subscription"]] = relationship("Subscription", back_populates="user")
-    credit_ledger: Mapped[list["CreditLedger"]] = relationship("CreditLedger", back_populates="user")
+    orders: Mapped[list[Order]] = relationship("Order", back_populates="user")
+    subscriptions: Mapped[list[Subscription]] = relationship("Subscription", back_populates="user")
+    credit_ledger: Mapped[list[CreditLedger]] = relationship("CreditLedger", back_populates="user")
 
 
 class AuthProvider(str, enum.Enum):
@@ -116,16 +126,16 @@ class AuthIdentity(Base, UUIDPrimaryKey, TimestampMixin):
     # 服务商返回的稳定账号 ID（邮箱登录时等于 email）
     provider_account_id: Mapped[str] = mapped_column(String(255), nullable=False)
     # 冗余邮箱，便于已验证邮箱的谨慎自动合并
-    provider_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    provider_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # 加密存储或不落库（OAuth access/refresh token 等）
-    access_token_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    refresh_token_enc: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    token_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    access_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    refresh_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    user: Mapped["User"] = relationship("User", back_populates="auth_identities")
+    user: Mapped[User] = relationship("User", back_populates="auth_identities")
 
     __table_args__ = (
         UniqueConstraint("provider", "provider_account_id", name="uq_auth_provider_account"),

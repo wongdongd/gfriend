@@ -10,9 +10,9 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, Text, JSON
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -64,14 +64,14 @@ class Conversation(Base, UUIDPrimaryKey, TimestampMixin):
         nullable=False,
     )
 
-    title: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    title: Mapped[str | None] = mapped_column(String(128), nullable=True)
     # 快捷话题标记（JSON 数组：早安、分享今天、倾诉烦恼...）
-    quick_topics: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    quick_topics: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
-    last_message_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    character: Mapped["Character"] = relationship("Character", back_populates="conversations")
-    messages: Mapped[list["Message"]] = relationship(
+    character: Mapped[Character] = relationship("Character", back_populates="conversations")
+    messages: Mapped[list[Message]] = relationship(
         "Message", back_populates="conversation", cascade="all, delete-orphan"
     )
 
@@ -99,12 +99,12 @@ class Message(Base, UUIDPrimaryKey, TimestampMixin):
     content: Mapped[str] = mapped_column(Text, nullable=False)
 
     # 附件（图片/视频 URL 列表，JSON 存储）
-    attachments: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    attachments: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
     # ===== 快照字段（用于审计与成本追踪） =====
-    model_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    template_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-    policy_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    model_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    template_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    policy_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     # 用户反馈
     feedback: Mapped[MessageFeedback] = mapped_column(
@@ -112,7 +112,7 @@ class Message(Base, UUIDPrimaryKey, TimestampMixin):
         default=MessageFeedback.NONE,
         nullable=False,
     )
-    feedback_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    feedback_note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # 安全状态
     safety_status: Mapped[SafetyStatus] = mapped_column(
@@ -122,16 +122,16 @@ class Message(Base, UUIDPrimaryKey, TimestampMixin):
     )
 
     # 关联的生成任务（如本消息触发了图片生成）
-    generation_task_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    generation_task_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("generation_tasks.id", ondelete="SET NULL"),
         nullable=True,
     )
 
     # token 计数（成本追踪）
-    prompt_tokens: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    completion_tokens: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    prompt_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    completion_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    conversation: Mapped["Conversation"] = relationship("Conversation", back_populates="messages")
+    conversation: Mapped[Conversation] = relationship("Conversation", back_populates="messages")
 
     __table_args__ = (
         # 按会话 + 创建时间倒序查询消息历史（最常用查询模式）

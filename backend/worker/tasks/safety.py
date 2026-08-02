@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import logging
 
-from worker.celery_app import app
 from shared.async_runner import run_async
+
+from worker.celery_app import app
 
 logger = logging.getLogger(__name__)
 

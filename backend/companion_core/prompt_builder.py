@@ -6,7 +6,10 @@
 """
 from __future__ import annotations
 
-from db.models.character import Character
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from db.models.character import Character
 
 # ===== 固定的全局安全规则（不可被角色设定覆盖） =====
 _BASE_SYSTEM_PROMPT = """你是用户创建的 AI 陪伴角色。请遵守以下不可违反的规则：

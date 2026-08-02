@@ -1,11 +1,14 @@
 ﻿"""全局异常处理：将 AppError 渲染为 {code, message, params} 统一结构。"""
 from __future__ import annotations
 
+import contextlib
 import logging
 
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+
+from api.core.error_codes import ERROR_DEFINITIONS, AppError
 
 # Starlette 重命名了 422 常量：新版本用 UNPROCESSABLE_CONTENT，旧版本用 UNPROCESSABLE_ENTITY。
 # 兼容两种版本，避免 AttributeError 与弃用警告。
@@ -15,8 +18,6 @@ HTTP_422 = getattr(
     status.HTTP_422_UNPROCESSABLE_ENTITY,
 )
 
-from api.core.error_codes import AppError, ERROR_DEFINITIONS
-
 logger = logging.getLogger(__name__)
 
 
@@ -25,11 +26,9 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     _status, default_message = ERROR_DEFINITIONS[exc.code]
     message = default_message
     if exc.params:
-        try:
+        # 参数缺失时回退到未渲染模板，保证可读
+        with contextlib.suppress(KeyError, IndexError):
             message = default_message.format(**exc.params)
-        except (KeyError, IndexError):
-            # 参数缺失时回退到未渲染模板，保证可读
-            pass
     # 4xx 记 WARNING，5xx 记 ERROR，方便排查
     log_level = logging.ERROR if exc.status_code >= 500 else logging.WARNING
     logger.log(

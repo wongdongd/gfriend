@@ -11,9 +11,18 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -58,20 +67,20 @@ class CreditLedger(Base, UUIDPrimaryKey, TimestampMixin):
     balance_after: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # 关联实体
-    order_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    order_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("orders.id", ondelete="SET NULL"),
         nullable=True,
     )
-    related_task_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    related_task_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("generation_tasks.id", ondelete="SET NULL"),
         nullable=True,
     )
     # 幂等键
-    idempotency_key: Mapped[Optional[str]] = mapped_column(String(128), unique=True, nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
 
-    note: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    user: Mapped["User"] = relationship("User", back_populates="credit_ledger")
+    user: Mapped[User] = relationship("User", back_populates="credit_ledger")
 
     __table_args__ = (
         # 用户积分流水查询（最常用：按用户 + 时间倒序）
@@ -131,7 +140,7 @@ class Order(Base, UUIDPrimaryKey, TimestampMixin):
     # 套餐/积分包标识
     sku_code: Mapped[str] = mapped_column(String(64), nullable=False)
     # 积分包数量（type=credits 时有效）
-    credits_amount: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    credits_amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # 支付渠道
     channel: Mapped[PaymentChannel] = mapped_column(
@@ -139,14 +148,14 @@ class Order(Base, UUIDPrimaryKey, TimestampMixin):
         nullable=False,
     )
     # 第三方会话/支付意图 ID
-    provider_checkout_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    provider_payment_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    provider_checkout_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    provider_payment_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # Webhook 事件 ID（幂等）
-    provider_event_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
+    provider_event_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
 
-    paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    user: Mapped["User"] = relationship("User", back_populates="orders")
+    user: Mapped[User] = relationship("User", back_populates="orders")
 
 
 class SubscriptionStatus(str, enum.Enum):
@@ -178,11 +187,11 @@ class Subscription(Base, UUIDPrimaryKey, TimestampMixin):
     # 套餐标识（free / companion / pro）
     tier: Mapped[str] = mapped_column(String(32), nullable=False)
     # 权益快照（JSON：角色数上限、对话额度、记忆容量、图片额度等）
-    entitlements: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    entitlements: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # 周期
-    current_period_start: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    current_period_end: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    current_period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    current_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     cancel_at_period_end: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     # 渠道
@@ -190,11 +199,11 @@ class Subscription(Base, UUIDPrimaryKey, TimestampMixin):
         Enum(PaymentChannel, name="payment_channel", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
-    provider_subscription_id: Mapped[Optional[str]] = mapped_column(String(255), index=True, nullable=True)
-    provider_customer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    provider_price_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    provider_subscription_id: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)
+    provider_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    provider_price_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    user: Mapped["User"] = relationship("User", back_populates="subscriptions")
+    user: Mapped[User] = relationship("User", back_populates="subscriptions")
 
     __table_args__ = (
         UniqueConstraint("user_id", "channel", name="uq_subscription_user_channel"),

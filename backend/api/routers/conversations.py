@@ -8,16 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from api.core.deps import get_current_user
-from api.core.error_codes import AppError, ErrorCode
 from companion_core.context import assemble_context
 from companion_core.memory_retrieval import retrieve_memories
 from companion_core.safety_guard import (
@@ -29,11 +20,19 @@ from companion_core.safety_guard import (
 from db.models.character import Character, CharacterStatus
 from db.models.conversation import Conversation, Message, MessageFeedback, MessageRole, SafetyStatus
 from db.models.user import User
+from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import StreamingResponse
 from provider_adapters.llm import get_llm_adapter
 from provider_adapters.llm.base import LLMMessage, LLMRequest
 from provider_adapters.safety import SafetyVerdict, get_safety_adapter
+from pydantic import BaseModel
 from shared.config import settings
 from shared.database import async_session_factory, get_db
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api.core.deps import get_current_user
+from api.core.error_codes import AppError, ErrorCode
 
 logger = logging.getLogger(__name__)
 
@@ -137,13 +136,13 @@ async def _build_user_content(
 
 class SendMessageRequest(BaseModel):
     content: str
-    conversation_id: Optional[str] = None
-    attachment_ids: Optional[list[str]] = None
+    conversation_id: str | None = None
+    attachment_ids: list[str] | None = None
 
 
 class FeedbackRequest(BaseModel):
     feedback: MessageFeedback
-    note: Optional[str] = None
+    note: str | None = None
 
 
 @router.get("/{character_id}/messages")
@@ -152,7 +151,7 @@ async def list_messages(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     limit: int = Query(50, le=200),
-    before: Optional[str] = None,
+    before: str | None = None,
 ):
     """获取会话消息历史。"""
     character = await _get_character(db, character_id, user)

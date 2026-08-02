@@ -2,18 +2,17 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional
 
+from db.models.memory import Memory, MemoryStatus, MemoryType
+from db.models.user import User
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel
+from shared.database import get_db
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.core.deps import get_current_user
 from api.core.error_codes import AppError, ErrorCode
-from db.models.memory import Memory, MemoryStatus, MemoryType
-from db.models.user import User
-from shared.database import get_db
 
 router = APIRouter()
 
@@ -28,15 +27,15 @@ class MemoryOut(BaseModel):
 
 
 class MemoryUpdate(BaseModel):
-    content: Optional[str] = None
-    type: Optional[MemoryType] = None
-    status: Optional[MemoryStatus] = None
+    content: str | None = None
+    type: MemoryType | None = None
+    status: MemoryStatus | None = None
 
 
 @router.get("")
 async def list_memories(
-    character_id: Optional[uuid.UUID] = Query(None),
-    status_filter: Optional[MemoryStatus] = Query(None, alias="status"),
+    character_id: uuid.UUID | None = Query(None),
+    status_filter: MemoryStatus | None = Query(None, alias="status"),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

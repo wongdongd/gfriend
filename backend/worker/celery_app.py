@@ -7,8 +7,9 @@
 """
 from __future__ import annotations
 
-from celery import Celery
+from contextlib import suppress
 
+from celery import Celery
 from shared.config import settings
 
 app = Celery(
@@ -51,7 +52,5 @@ app.conf.update(
 app.autodiscover_tasks(["worker"], "tasks")
 
 # 显式导入确保任务注册（autodiscover 在某些启动方式下不会立即触发）
-try:
+with suppress(ImportError):
     from worker.tasks import generation, outbox, safety  # noqa: F401, E402
-except ImportError:
-    pass

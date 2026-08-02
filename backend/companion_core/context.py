@@ -5,11 +5,13 @@
 """
 from __future__ import annotations
 
-import uuid
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
-from db.models.character import Character
 from db.models.conversation import Message, MessageRole
+
+if TYPE_CHECKING:
+    from db.models.character import Character
 
 
 @dataclass

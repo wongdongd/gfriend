@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import UTC
+
+from shared.async_runner import run_async
 
 from worker.celery_app import app
-from shared.async_runner import run_async
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +26,10 @@ def process_pending(self, batch_size: int = 100) -> dict:
 
 
 async def _process_outbox(batch_size: int) -> dict:
-    import uuid
-
-    from sqlalchemy import select, update
-    from sqlalchemy.ext.asyncio import AsyncSession
 
     from db.models.generation import OutboxEvent
     from shared.database import async_session_factory
+    from sqlalchemy import select
 
     published = 0
     async with async_session_factory() as db:  # type: AsyncSession
@@ -54,9 +53,9 @@ async def _process_outbox(batch_size: int) -> dict:
 
                 # 标记已发布
                 event.is_published = True
-                from datetime import datetime, timezone
+                from datetime import datetime
 
-                event.published_at = datetime.now(timezone.utc)
+                event.published_at = datetime.now(UTC)
                 published += 1
             except Exception:
                 logger.exception("Outbox 事件投递失败: %s", event.id)

@@ -14,11 +14,11 @@
 from __future__ import annotations
 
 import os
-import subprocess
 import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
+
 load_dotenv(Path(__file__).resolve().parent / ".env")  # 始终加载 backend/.env，不依赖启动目录
 
 
@@ -99,8 +99,7 @@ def run_beat() -> None:
 
 def run_migrate() -> None:
     """执行数据库迁移（alembic upgrade head）。"""
-    from alembic.config import CommandLine
-    from alembic.config import Config
+    from alembic.config import CommandLine, Config
 
     cli = CommandLine()
     cli.parser.add_argument("-c", "--config", default="alembic.ini", help="alembic 配置文件")

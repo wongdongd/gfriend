@@ -3,15 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from typing import Optional
 
-from fastapi import APIRouter, Depends, Request, status
-from pydantic import BaseModel
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from api.core.deps import get_current_user
-from api.core.error_codes import AppError, ErrorCode
 from db.models.billing import (
     CreditEntryType,
     CreditLedger,
@@ -22,7 +14,14 @@ from db.models.billing import (
     Subscription,
 )
 from db.models.user import User
+from fastapi import APIRouter, Depends, Request
+from pydantic import BaseModel
 from shared.database import get_db
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api.core.deps import get_current_user
+from api.core.error_codes import AppError, ErrorCode
 
 router = APIRouter()
 
@@ -30,8 +29,8 @@ router = APIRouter()
 class CheckoutRequest(BaseModel):
     order_type: str = "subscription"  # subscription / credits
     sku_code: str
-    success_url: Optional[str] = None
-    cancel_url: Optional[str] = None
+    success_url: str | None = None
+    cancel_url: str | None = None
 
 
 @router.get("/billing/entitlements")
@@ -53,7 +52,7 @@ async def create_checkout(req: CheckoutRequest, user: User = Depends(get_current
     try:
         adapter = get_payment_adapter("stripe")
     except ValueError as e:
-        raise AppError(ErrorCode.BILLING_UNSUPPORTED_CHANNEL, {"reason": str(e)})
+        raise AppError(ErrorCode.BILLING_UNSUPPORTED_CHANNEL, {"reason": str(e)}) from e
 
     from provider_adapters.payment.base import CheckoutRequest as ProviderCheckoutRequest
 
@@ -83,7 +82,7 @@ async def create_checkout(req: CheckoutRequest, user: User = Depends(get_current
         result = await adapter.create_checkout(checkout_req)
     except Exception as e:
         await db.rollback()
-        raise AppError(ErrorCode.BILLING_CHECKOUT_FAILED, {"reason": str(e)})
+        raise AppError(ErrorCode.BILLING_CHECKOUT_FAILED, {"reason": str(e)}) from e
     order.provider_checkout_id = result.checkout_id
     await db.commit()
 
@@ -128,7 +127,7 @@ async def payment_webhook(provider: str, request: Request, db: AsyncSession = De
         # 用 to_thread 避免阻塞事件循环
         result = await asyncio.to_thread(adapter.handle_webhook, payload, headers)
     except Exception as e:
-        raise AppError(ErrorCode.BILLING_SIGNATURE_FAILED, {"reason": str(e)})
+        raise AppError(ErrorCode.BILLING_SIGNATURE_FAILED, {"reason": str(e)}) from e
 
     # 幂等检查：按 event_id 去重
     existing = await db.execute(select(Order).where(Order.provider_event_id == result.event_id))
@@ -177,13 +176,13 @@ async def list_credit_ledger(user: User = Depends(get_current_user), db: AsyncSe
     return {
         "items": [
             {
-                "id": str(l.id),
-                "type": l.type.value,
-                "amount": l.amount,
-                "balance_after": l.balance_after,
-                "note": l.note,
-                "created_at": l.created_at.isoformat(),
+                "id": str(entry.id),
+                "type": entry.type.value,
+                "amount": entry.amount,
+                "balance_after": entry.balance_after,
+                "note": entry.note,
+                "created_at": entry.created_at.isoformat(),
             }
-            for l in result.scalars().all()
+            for entry in result.scalars().all()
         ]
     }

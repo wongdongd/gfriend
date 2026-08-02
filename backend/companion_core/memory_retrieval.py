@@ -7,12 +7,15 @@
 """
 from __future__ import annotations
 
-import uuid
-
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import TYPE_CHECKING
 
 from db.models.memory import Memory, MemoryStatus
+from sqlalchemy import select
+
+if TYPE_CHECKING:
+    import uuid
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 # 默认注入的记忆数量上限（避免"记忆堆砌"）
 DEFAULT_TOP_K = 5

@@ -88,16 +88,15 @@ def _gzip_rotate(source: str, dest: str) -> None:
     Windows 下文件可能仍被 handler 持有句柄，os.remove 会报 WinError 32，
     此时跳过删除（.gz 已生成，残留的 source 会在下次滚动或进程退出时清理）。
     """
+    import contextlib
     import gzip
     import shutil
     import time
 
     gz_path = dest if dest.endswith(".gz") else dest + ".gz"
     if os.path.exists(gz_path):
-        try:
+        with contextlib.suppress(OSError):
             os.remove(gz_path)
-        except OSError:
-            pass
     try:
         with open(source, "rb") as f_in, gzip.open(gz_path, "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)

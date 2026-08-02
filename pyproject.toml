@@ -1,11 +1,23 @@
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["alembic/versions"]
+extend-exclude = ["**/alembic/versions/**"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "TCH"]
-ignore = ["E501"]
+ignore = [
+    "E501",
+    # FastAPI 惯用法：Depends/Query/Path 作为参数默认值是框架标准写法
+    "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# SQLAlchemy 在运行时 eval 解析 Mapped[...] 注解，uuid/datetime 等必须保持运行时导入，
+# 不可移入 TYPE_CHECKING（否则 mapper 配置阶段抛 MappedAnnotationError）
+"backend/db/models/**" = ["TC001", "TC002", "TC003"]
+# FastAPI/pydantic 在请求时构建校验器并解析签名/字段注解，
+# api 层（路由、依赖、异常处理器）中的导入同样必须保持运行时可见
+"backend/api/**" = ["TC001", "TC002", "TC003"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["backend"]

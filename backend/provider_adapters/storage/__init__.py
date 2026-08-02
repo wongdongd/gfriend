@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from provider_adapters.storage.base import StorageAdapter
 
-
 _storage: StorageAdapter | None = None
 
 

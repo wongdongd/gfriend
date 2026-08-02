@@ -4,9 +4,12 @@
 """
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING
 
 from provider_adapters.llm.base import LLMAdapter, LLMRequest, LLMResponse, LLMUsage
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 class OpenAILLMAdapter(LLMAdapter):

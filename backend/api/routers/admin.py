@@ -1,13 +1,13 @@
 ﻿"""管理后台路由：用户、模板、审核、任务、运营看板。"""
 from __future__ import annotations
 
+from db.models.user import User
 from fastapi import APIRouter, Depends, Query
+from shared.database import get_db
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.core.deps import require_operator
-from db.models.user import User
-from shared.database import get_db
 
 router = APIRouter()
 
@@ -17,7 +17,6 @@ async def dashboard(user: User = Depends(require_operator), db: AsyncSession = D
     """运营看板：基础统计。"""
     from db.models.character import Character
     from db.models.generation import GenerationTask
-    from db.models.billing import Order
     from db.models.safety import SafetyEvent
 
     # 用户总数

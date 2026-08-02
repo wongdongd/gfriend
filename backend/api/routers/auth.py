@@ -5,9 +5,14 @@ Token 通过 httpOnly cookie 下发，同时也支持 Authorization header（兼
 from __future__ import annotations
 
 import uuid
+from datetime import UTC
 
-from fastapi import APIRouter, Depends, Response, status
+from db.models.billing import CreditEntryType, CreditLedger
+from db.models.user import AgeStatus, AuthIdentity, AuthProvider, User
+from fastapi import APIRouter, Depends, Response
 from pydantic import BaseModel, EmailStr, Field
+from shared.config import settings
+from shared.database import get_db
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,10 +28,6 @@ from api.core.security import (
     store_refresh_token,
     verify_password,
 )
-from db.models.user import AgeStatus, AuthIdentity, AuthProvider, User
-from db.models.billing import CreditEntryType, CreditLedger
-from shared.config import settings
-from shared.database import get_db
 
 router = APIRouter()
 
@@ -207,8 +208,8 @@ async def confirm_age(req: AgeConfirmRequest, user: User = Depends(get_current_u
     """年龄确认（首次创建账户后执行）。"""
     user.age_status = AgeStatus.CONFIRMED if req.is_adult else AgeStatus.MINOR
     if req.is_adult and not user.terms_accepted_at:
-        from datetime import datetime, timezone
-        user.terms_accepted_at = datetime.now(timezone.utc)
+        from datetime import datetime
+        user.terms_accepted_at = datetime.now(UTC)
     await db.commit()
     return {"age_status": user.age_status.value}
 

@@ -4,19 +4,18 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import datetime
-from typing import Optional
 
+from db.models.character import Character, CharacterStatus
+from db.models.user import User
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import or_, select
+from shared.database import get_db
 from sqlalchemy import delete as sql_delete
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.core.deps import get_current_user
 from api.core.error_codes import AppError, ErrorCode
-from db.models.character import Character, CharacterStatus
-from db.models.user import User
-from shared.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -25,29 +24,29 @@ router = APIRouter()
 
 class CharacterCreate(BaseModel):
     name: str = Field(..., max_length=64)
-    companion_preference: Optional[str] = None
-    relationship_template_code: Optional[str] = None
-    personality_template_code: Optional[str] = None
-    visual_style_code: Optional[str] = None
+    companion_preference: str | None = None
+    relationship_template_code: str | None = None
+    personality_template_code: str | None = None
+    visual_style_code: str | None = None
 
 
 class CharacterUpdate(BaseModel):
-    name: Optional[str] = None
-    companion_preference: Optional[str] = None
-    relationship_template_code: Optional[str] = None
-    personality_template_code: Optional[str] = None
-    visual_style_code: Optional[str] = None
-    interaction_bounds: Optional[str] = None
-    status: Optional[CharacterStatus] = None
+    name: str | None = None
+    companion_preference: str | None = None
+    relationship_template_code: str | None = None
+    personality_template_code: str | None = None
+    visual_style_code: str | None = None
+    interaction_bounds: str | None = None
+    status: CharacterStatus | None = None
 
 
 class CharacterOut(BaseModel):
     id: uuid.UUID
     name: str
-    companion_preference: Optional[str]
-    relationship_template_code: Optional[str]
-    personality_template_code: Optional[str]
-    visual_style_code: Optional[str]
+    companion_preference: str | None
+    relationship_template_code: str | None
+    personality_template_code: str | None
+    visual_style_code: str | None
     status: str
     created_at: datetime
 

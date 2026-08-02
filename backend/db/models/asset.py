@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import enum
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -54,7 +54,7 @@ class Asset(Base, UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin):
         index=True,
         nullable=False,
     )
-    character_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    character_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("characters.id", ondelete="SET NULL"),
         index=True,
         nullable=True,
@@ -72,13 +72,13 @@ class Asset(Base, UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin):
 
     # 对象存储
     object_key: Mapped[str] = mapped_column(String(512), nullable=False)
-    bucket: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    mime_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    size_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    bucket: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    mime_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # 图片/视频尺寸
-    width: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    height: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    duration_seconds: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="视频时长(秒)")
+    width: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    height: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True, comment="视频时长(秒)")
 
     # 访问策略
     access_policy: Mapped[str] = mapped_column(String(32), default="signed", nullable=False)
@@ -91,15 +91,15 @@ class Asset(Base, UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin):
     )
 
     # 关联的生成任务（如本素材由某任务生成）
-    generation_task_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    generation_task_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("generation_tasks.id", ondelete="SET NULL"),
         nullable=True,
     )
 
     # 元数据（JSON：如生成参数、模型版本等）
-    metadata_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    character: Mapped[Optional["Character"]] = relationship(
+    character: Mapped[Character | None] = relationship(
         "Character", back_populates="assets", foreign_keys="Asset.character_id"
     )
 
@@ -124,23 +124,23 @@ class Work(Base, UUIDPrimaryKey, TimestampMixin):
     )
 
     # 源任务
-    generation_task_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    generation_task_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("generation_tasks.id", ondelete="SET NULL"),
         nullable=True,
     )
 
     # 主素材
-    primary_asset_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    primary_asset_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("assets.id", ondelete="SET NULL"),
         nullable=True,
     )
 
     # 场景模板 code + 风格模板 code（时间线展示用）
-    scene_template_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    style_template_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    scene_template_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    style_template_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # 用户补充的情境描述
-    caption: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    caption: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # 时间线展示信息
-    display_at: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="展示时间标签")
+    display_at: Mapped[str | None] = mapped_column(String(64), nullable=True, comment="展示时间标签")
     is_favorite: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

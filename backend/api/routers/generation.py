@@ -9,20 +9,19 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Optional
 
-from fastapi import APIRouter, Depends, status
+from db.models.character import Character, CharacterStatus
+from db.models.generation import GenerationTask, OutboxEvent, TaskStatus, TaskType
+from db.models.user import User
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from shared.config import settings
+from shared.database import get_db
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.core.deps import get_current_user
 from api.core.error_codes import AppError, ErrorCode
-from db.models.character import Character, CharacterStatus
-from db.models.generation import GenerationTask, OutboxEvent, TaskStatus, TaskType
-from db.models.user import User
-from shared.config import settings
-from shared.database import get_db
 
 router = APIRouter()
 
@@ -30,10 +29,10 @@ router = APIRouter()
 class CreateTaskRequest(BaseModel):
     character_id: str
     type: TaskType = TaskType.IMAGE
-    scene_template_code: Optional[str] = None
-    style_template_code: Optional[str] = None
-    caption: Optional[str] = None  # 用户补充的情境描述
-    conversation_id: Optional[str] = None
+    scene_template_code: str | None = None
+    style_template_code: str | None = None
+    caption: str | None = None  # 用户补充的情境描述
+    conversation_id: str | None = None
 
 
 @router.post("")
@@ -134,7 +133,7 @@ async def get_task(task_id: uuid.UUID, user: User = Depends(get_current_user), d
     if not task:
         raise AppError(ErrorCode.RESOURCE_TASK_NOT_FOUND)
 
-    url: Optional[str] = None
+    url: str | None = None
     if task.status == TaskStatus.SUCCESS and task.result_asset_id:
         asset_res = await db.execute(select(Asset).where(Asset.id == task.result_asset_id, Asset.owner_id == user.id))
         asset = asset_res.scalar_one_or_none()
